@@ -1,0 +1,133 @@
+[gd_scene load_steps=4 format=3 uid="uid://bmou0qek2bf1h"]
+
+[ext_resource type="Theme" uid="uid://ch3jp53ski7do" path="res://addons/behbeh/theme/beh_theme.tres" id="1_oey16"]
+[ext_resource type="Script" path="res://addons/behbeh/editor/beh_editor.gd" id="2_51pct"]
+[ext_resource type="Script" path="res://addons/behbeh/editor/beh_editor_graph_edit.gd" id="3_wquae"]
+
+[node name="BehEditor" type="Panel"]
+custom_minimum_size = Vector2(0, 300)
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 1
+theme = ExtResource("1_oey16")
+script = ExtResource("2_51pct")
+
+[node name="HCtn" type="HSplitContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="SideCtnMargins" type="MarginContainer" parent="HCtn"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 4
+
+[node name="SideCtn" type="VBoxContainer" parent="HCtn/SideCtnMargins"]
+custom_minimum_size = Vector2(250, 0)
+layout_mode = 2
+theme_override_constants/separation = 40
+
+[node name="ViewActionsCtn" type="VBoxContainer" parent="HCtn/SideCtnMargins/SideCtn"]
+custom_minimum_size = Vector2(250, 0)
+layout_mode = 2
+
+[node name="HeaderLabel" type="Label" parent="HCtn/SideCtnMargins/SideCtn/ViewActionsCtn"]
+layout_mode = 2
+theme_type_variation = &"HeaderMedium"
+text = "View
+"
+
+[node name="HeaderSpacer" type="Control" parent="HCtn/SideCtnMargins/SideCtn/ViewActionsCtn"]
+custom_minimum_size = Vector2(0, 6)
+layout_mode = 2
+
+[node name="BtnRecenterViewOnRoot" type="Button" parent="HCtn/SideCtnMargins/SideCtn/ViewActionsCtn"]
+layout_mode = 2
+text = "Recenter View on Root"
+
+[node name="FileActionsCtn" type="VBoxContainer" parent="HCtn/SideCtnMargins/SideCtn"]
+visible = false
+custom_minimum_size = Vector2(250, 0)
+layout_mode = 2
+
+[node name="HeaderLabel" type="Label" parent="HCtn/SideCtnMargins/SideCtn/FileActionsCtn"]
+layout_mode = 2
+theme_type_variation = &"HeaderMedium"
+text = "File"
+
+[node name="HeaderSpacer" type="Control" parent="HCtn/SideCtnMargins/SideCtn/FileActionsCtn"]
+custom_minimum_size = Vector2(0, 6)
+layout_mode = 2
+
+[node name="CurrentFileLabel" type="Label" parent="HCtn/SideCtnMargins/SideCtn/FileActionsCtn"]
+layout_mode = 2
+text = "Open: (none)"
+
+[node name="BtnFileOpen" type="Button" parent="HCtn/SideCtnMargins/SideCtn/FileActionsCtn"]
+layout_mode = 2
+text = "Open BehTree"
+
+[node name="DbgActiveNodeLabel" type="Label" parent="HCtn/SideCtnMargins/SideCtn"]
+visible = false
+layout_mode = 2
+text = "Active Node: (none)"
+
+[node name="DbgInfoCtn" type="VBoxContainer" parent="HCtn/SideCtnMargins/SideCtn"]
+custom_minimum_size = Vector2(250, 0)
+layout_mode = 2
+
+[node name="HeaderLabel" type="Label" parent="HCtn/SideCtnMargins/SideCtn/DbgInfoCtn"]
+layout_mode = 2
+theme_type_variation = &"HeaderMedium"
+text = "Debug Info"
+
+[node name="HeaderSpacer" type="Control" parent="HCtn/SideCtnMargins/SideCtn/DbgInfoCtn"]
+custom_minimum_size = Vector2(0, 6)
+layout_mode = 2
+
+[node name="DbgLabelRootId" type="Label" parent="HCtn/SideCtnMargins/SideCtn/DbgInfoCtn"]
+layout_mode = 2
+text = "Root Id: (none)"
+
+[node name="DbgLabelOrphanCount" type="Label" parent="HCtn/SideCtnMargins/SideCtn/DbgInfoCtn"]
+layout_mode = 2
+text = "Tracked Orphan Count: (none)"
+
+[node name="GraphEdit" type="GraphEdit" parent="HCtn"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+arrange_nodes_button_hidden = true
+script = ExtResource("3_wquae")
+
+[node name="ContextPopupMenu" type="PopupMenu" parent="."]
+
+[node name="ContextAddNodePopupPanel" type="PopupPanel" parent="."]
+title = "Add Node"
+size = Vector2i(300, 100)
+
+[node name="MarginCtn" type="MarginContainer" parent="ContextAddNodePopupPanel"]
+offset_left = 4.0
+offset_top = 4.0
+offset_right = 296.0
+offset_bottom = 96.0
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 6
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 6
+
+[node name="VBoxCtn" type="VBoxContainer" parent="ContextAddNodePopupPanel/MarginCtn"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="Label" type="Label" parent="ContextAddNodePopupPanel/MarginCtn/VBoxCtn"]
+layout_mode = 2
+theme_type_variation = &"HeaderSmall"
+text = "Add Node"
