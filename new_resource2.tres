@@ -1,6 +1,0 @@
-[gd_resource type="Resource" script_class="TestCustomBehavior" load_steps=2 format=3 uid="uid://dmeyhhnm161qa"]
-
-[ext_resource type="Script" path="res://beh_test_custom.gd" id="1_m7pdi"]
-
-[resource]
-script = ExtResource("1_m7pdi")

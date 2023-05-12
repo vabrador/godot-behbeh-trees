@@ -21,6 +21,10 @@ project/assembly_name="BTreeTestProject"
 
 enabled=PackedStringArray("res://addons/behbeh/plugin.cfg")
 
+[filesystem]
+
+import/blender/enabled=false
+
 [rendering]
 
 renderer/rendering_method="mobile"
