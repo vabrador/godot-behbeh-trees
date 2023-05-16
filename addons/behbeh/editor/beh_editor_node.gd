@@ -42,24 +42,19 @@ func init_node_view():
 	self.title = beh.editor_get_name()
 	self.add_theme_color_override("title_color", beh.editor_get_color())
 	
-	# Root: Right slot only.
-	if beh.get_is_root():
-		self.set_slot(
-			0, # port slot
-			false, TYPE_BOOL, COLOR_CONNECTION_CONTROL_FLOW,  # left port
-			true, TYPE_BOOL, COLOR_CONNECTION_CONTROL_FLOW,  # right port
-			null, null, # icons
-			false		# draw_stylebox (?)
-		)
-	# Leaf: Left slot only.
-	else:
-		self.set_slot(
-			0, # port slot
-			true, TYPE_BOOL, COLOR_CONNECTION_CONTROL_FLOW,  # left port
-			false, TYPE_BOOL, COLOR_CONNECTION_CONTROL_FLOW,  # right port
-			null, null, # icons
-			false		# draw_stylebox (?)
-		)
+	# Left slot: Non-root only.
+	var has_left_slot = !beh.get_is_root()
+	# Right slot: can-add-child only.
+	var has_right_slot = beh.get_can_add_child()
+	
+	# Set up left & right slots.
+	self.set_slot(
+		0, # slot idx
+		has_left_slot, TYPE_BOOL, COLOR_CONNECTION_CONTROL_FLOW,  # left slot
+		has_right_slot, TYPE_BOOL, COLOR_CONNECTION_CONTROL_FLOW,  # right slot
+		null, null, # icons
+		false		# draw_stylebox (?)
+	)
 	# Ensure slot0 exists. A Control has to exist as a child in order for
 	# slots to be drawn.
 	var slot0 = null

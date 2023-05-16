@@ -48,7 +48,6 @@ func _make_visible(visible: bool):
 	print("[BehBehPlugin] make_visible %s called." % visible)
 	if visible:
 		add_control_to_bottom_panel(docked_beh_editor, "BehBeh Tree Editor")
-		make_bottom_panel_item_visible(docked_beh_editor)
 	else:
 		remove_control_from_bottom_panel(docked_beh_editor)
 
@@ -61,6 +60,9 @@ func _edit(obj: Object):
 	if !(_handles(obj)): to_edit = null
 	# obj may be null; in which case no object to edit, should clean up editing state.
 	docked_beh_editor.notify_edit_target(obj)
+	if docked_beh_editor.active_tree != null:
+		print("[BehBehPlugin] _edit: taking focus b/c active_tree != null")
+		make_bottom_panel_item_visible(docked_beh_editor)
 #	_edited_obj = obj
 	pass
 

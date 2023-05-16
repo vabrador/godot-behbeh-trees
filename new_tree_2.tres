@@ -1,9 +1,0 @@
-[gd_resource type="Resource" script_class="BehTree" load_steps=2 format=3 uid="uid://cescyqqo8d278"]
-
-[ext_resource type="Script" path="res://addons/behbeh/tree/beh_tree.gd" id="1_gl3vu"]
-
-[resource]
-script = ExtResource("1_gl3vu")
-roots = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([])
-node_meta = {}
-orphans = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([])

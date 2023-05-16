@@ -9,9 +9,11 @@ extends Control
 @onready var btn_reset_view_root: Button = $HCtn/SideCtnMargins/SideCtn/ViewActionsCtn/BtnRecenterViewOnRoot
 @onready var btn_open_beh: Button = $HCtn/SideCtnMargins/SideCtn/FileActionsCtn/BtnFileOpen
 # Context Menu(s)
-@onready var ctx_menu: PopupMenu = $ContextPopupMenu
-@onready var ctx_add_node_panel: PopupPanel = $ContextAddNodePopupPanel
-@onready var ctx_add_node_panel_ctn: VBoxContainer = $ContextAddNodePopupPanel/MarginCtn/VBoxCtn
+## GRAPH context menu, for e.g. adding new nodes.
+@onready var ctx_menu_graph: PopupPanel = $ContextAddNodePopupPanel
+@onready var ctx_menu_graph_ctn: VBoxContainer = $ContextAddNodePopupPanel/MarginCtn/VBoxCtn
+## NODE context menu, for operations on selected node(s).
+@onready var ctx_menu_node: PopupMenu = $ContextPopupMenu
 # Side Container
 @onready var side_ctn: VBoxContainer = $HCtn/SideCtnMargins/SideCtn
 # Debug labels
@@ -21,8 +23,7 @@ extends Control
 
 
 var editor_plugin: EditorPlugin = null
-var _is_ready: bool = false;
-var _centered_on_first_draw = false
+var _is_ready: bool = false
 ## Currently-focused BehTree. Null if none is selected or available.
 var active_tree: BehTree = null
 ## Currently-focused BehNode. Null if none is selected or available.
@@ -33,12 +34,24 @@ var _mouse_inside := false
 var _add_beh_node_picker: EditorResourcePicker = null
 var _new_node_pos = null
 var _editor_node_map: Dictionary = {}
+var _subscribed_active_tree: BehTree = null
 var _subscribed_editor_nodes: Dictionary = {}
+var _selected_nodes: Dictionary = {}
+var _copy_nodes_buffer: Array[BehEditorNode] = []
+var _ctx_menu_node_id_pressed_subscribed = false
+var _pending_node_positions = {} # Used to place nodes that don't yet have stable_ids from saving.
 
-# TODO: DELETEME
-#var _bak_entry: BehEditorNodeEntry = null
-#var entry: BehEditorNodeEntry:
-#	get: return _get_or_construct_entry()
+
+enum ContextMenuType { GraphCtxMenu, NodeCtxMenu }
+var _ctx_menu_node_entries: Array[Dictionary] = [
+	{ "id": 0,	"name": "Node Context Menu",	"action": null, },
+	{ "id": 1,	"name": "Copy", 				"action": "on_copy_nodes_request", },
+	{ "id": 2,	"name": "Paste",				"action": "on_paste_nodes_request", },
+	{ "id": 3,	"name": "Delete",				"action": "on_delete_nodes_request", },
+	{ "id": 4,	"name": "Duplicate",			"action": "on_duplicate_nodes_request", },
+	{ "id": 5,	"name": "Clear Copy Buffer",	"action": "on_clear_copy_buffer_request", },
+]
+var _ctx_menu_node_separators: Array[int] = [ ]
 
 
 # === Godot Events ===
@@ -57,69 +70,9 @@ func _exit_tree():
 	_is_ready = false
 
 
-func clear_editor_nodes():
-	print("[BehEditor] Clearing editor nodes (unsubscribing first) and map cache for them.")
-	unsubscribe_editor_node_signals()
-	if len(_subscribed_editor_nodes) > 0:
-		push_warning("[BehEditor] Still had some editor node subscriptions after attempting " +
-			"to unsubscribe from them.")
-		_subscribed_editor_nodes.clear()
-	graph.clear_connections() # Clear connections, prevents errors when freeing GraphNodes
-	for key in _editor_node_map.keys():
-		var ed_node = _editor_node_map[key]
-		_editor_node_map.erase(key)
-		graph.remove_child(ed_node)
-		ed_node.queue_free()
-	_editor_node_map.clear()
-
-
 func _draw():
-	if !_centered_on_first_draw:
-		_centered_on_first_draw = true
-		center_view_on_root.call()
 	if !_is_ready: return
 	_should_update = true
-
-
-#func _notification(what):
-#	match what:
-#		NOTIFICATION_MOUSE_ENTER:
-#			print("MOUSE INSIDE")
-#			_mouse_inside = true
-#		NOTIFICATION_FOCUS_EXIT:
-#			print("FOCUS OUTSIDE")
-#			_mouse_inside = false
-#		NOTIFICATION_DRAW:
-#			print("DRAW")
-#		NOTIFICATION_RESIZED:
-#			print("RESIZED")
-#		NOTIFICATION_EXIT_CANVAS:
-#			print("NOTIFICATION_EXIT_CANVAS")
-#		NOTIFICATION_DISABLED:
-#			print("NOTIFICATION_DISABLED")
-#		NOTIFICATION_VP_MOUSE_ENTER:
-#			print("NOTIFICATION_VP_MOUSE_ENTER")
-#		NOTIFICATION_VP_MOUSE_EXIT:
-#			print("NOTIFICATION_VP_MOUSE_EXIT")
-#		NOTIFICATION_FOCUS_EXIT:
-#			print("MOUSE OUTSIDE")
-#			_mouse_inside = false
-
-
-#func _input(event: InputEvent):
-#	if event is InputEventMouseButton:
-#		if event.button_index == MOUSE_BUTTON_RIGHT && _mouse_inside:
-#			print("mouse was inside")
-#			if event.is_pressed():
-#				print("opening context menu")
-#				open_context_menu(event.position)
-#				print("ctx menu is at %s" % ctx_menu.position)
-#		else:
-#			if _ctx_open:
-#				print("closing context menu")
-#				_ctx_open = false
-
-var _subscribed_active_tree: BehTree = null
 
 
 func _process(dt):
@@ -161,6 +114,17 @@ func _process(dt):
 	# And save again if validation changed the tree.
 	if active_tree.validate_roots_and_orphans():
 		save_active_tree()
+	if active_tree.validate_single_parents():
+		save_active_tree()
+	
+	# Process _pending_node_positions in case BehNodes want editor positions but didn't
+	# have stable_ids when they were spawned.
+	if len(_pending_node_positions) > 0:
+		for beh_node in _pending_node_positions.keys():
+			var desired_pos = _pending_node_positions[beh_node]
+			active_tree.set_editor_offset(beh_node, desired_pos)
+		_pending_node_positions.clear()
+		_should_update = true # Re-update to invoke a re-save.
 	
 	# Node Editor view objects
 	# ------------------------
@@ -210,6 +174,15 @@ func _process(dt):
 							ed_node.name, child_ed_node.name, conn_err])
 #					else:
 #						print("[BehEditor] (BehEditorNode Sync Children) Connected")
+	
+	# Validate selected nodes
+	# -----------------------
+	for sel_key_name in _selected_nodes.keys():
+#		var sel_node = _selected_nodes[sel_key_name]
+		var sel_node = graph.get_node_or_null(sel_key_name)
+		if sel_node == null:
+			push_warning("[BehEditor] (Validate Selected Nodes) Removing a null node from selection (deleted?)")
+			_selected_nodes.erase(sel_key_name)
 	
 	# Update debug info.
 	dbg_label_root_id.text = "Root Count: %s" % len(active_tree.roots)
@@ -312,37 +285,131 @@ func notify_edit_target(target: Variant):
 # === Context Menu & Add-Node Picker ===
 
 
-func open_context_menu(graph_control_local_mouse_pos: Vector2):
-	print("[BehEditor] GOT open_context_menu")
+func get_graph_local_pos_from_control_pos(control_local_pos: Vector2) -> Vector2:
+	var graph_local_pos_wo_scroll = control_local_pos / graph.zoom
+	var graph_local_pos = graph_local_pos_wo_scroll + graph.scroll_offset / graph.zoom
+	return graph_local_pos
+
+
+func on_request_ctx_menu(mouse_graph_control_local_pos: Vector2):
+	print("[BehEditor] GOT on_request_ctx_menu")
 	
-	# Calculate where to spawn the new node based on the click.
-	var graph_local_pos_ignore_scroll = graph_control_local_mouse_pos / graph.zoom
-	var graph_local_pos = graph_local_pos_ignore_scroll + graph.scroll_offset / graph.zoom
-	_new_node_pos = graph_local_pos
+	# Calculate where the click was in the control.
+	var mouse_graph_local_pos = get_graph_local_pos_from_control_pos(mouse_graph_control_local_pos)
+	print("[BehEditor] (on_request_ctx_menu) mouse_graph_control_local_pos = %s" % mouse_graph_control_local_pos)
+	print("[BehEditor] (on_request_ctx_menu) mouse_graph_local_pos = %s" % mouse_graph_local_pos)
+	
+	# Type of context menu to open.
+	var context_menu_type := ContextMenuType.GraphCtxMenu
+	
+	# Determine whether this is a node_context_menu action or a
+	# graph_context_menu action.
+	#
+	# Right-click any selected node to get the node context menu isntead of the
+	# graph context menu.
+	var clicked_node = null
+	if len(_selected_nodes) > 0:
+		for node_name_key in _selected_nodes:
+			var node: BehEditorNode = try_get_node_from_name(node_name_key)
+			if node == null:
+				continue
+			var hitbox_control_local = node.get_rect()
+			if hitbox_control_local.has_point(mouse_graph_control_local_pos):
+				print("[BehEditor] (on_request_ctx_menu) Clicked node: %s @ %s" % [
+					node.name, hitbox_control_local])
+				clicked_node = node
+				break
+			else:
+				print("[BehEditor] (on_request_ctx_menu) Click missed node: %s @ %s" % [
+					node.name, hitbox_control_local])
+	if clicked_node != null:
+		print("[BehEditor] (on_request_ctx_menu) Context menu on node: %s" % clicked_node.name)
+		context_menu_type = ContextMenuType.NodeCtxMenu
+	
+	match context_menu_type:
+		ContextMenuType.GraphCtxMenu:
+			open_graph_ctx_menu(mouse_graph_control_local_pos)
+		ContextMenuType.NodeCtxMenu:
+			open_node_ctx_menu(mouse_graph_control_local_pos)
+		_:
+			push_error("[BehEditor] (on_request_ctx_menu) Unhandled %s" % context_menu_type)
+	pass
+
+
+func open_graph_ctx_menu(mouse_graph_control_local_pos: Vector2):
+	# Calculate where the click was in the control.
+	var mouse_graph_local_pos = get_graph_local_pos_from_control_pos(mouse_graph_control_local_pos)
+	print("[BehEditor] (open_graph_ctx_menu) mouse_graph_local_pos = %s (will be used for new nodes)" % mouse_graph_local_pos)
+	_new_node_pos = mouse_graph_local_pos
+	
 	# Spawn the context menu (which needs the global click position instead.)
-	ctx_add_node_panel.position = graph.get_global_mouse_position()
-	ctx_add_node_panel.size.x = 300
-	ctx_add_node_panel.size.y = 60
+	ctx_menu_graph.position = graph.get_global_mouse_position()
+	ctx_menu_graph.size.x = 300
+	ctx_menu_graph.size.y = 60
 	# Spawn the node picker inside the context popup panel.
 	var beh_node_picker = init_beh_node_picker()
 	if beh_node_picker.get_parent() != null: # Make sure parent is correct
 		beh_node_picker.get_parent().remove_child(beh_node_picker)
-	ctx_add_node_panel_ctn.add_child(beh_node_picker)
-	ctx_add_node_panel.popup()
+	ctx_menu_graph_ctn.add_child(beh_node_picker)
+	ctx_menu_graph.popup()
+
+
+func open_node_ctx_menu(mouse_graph_control_local_pos: Vector2):
+	# Calculate where the click was in the control.
+	var mouse_graph_local_pos = get_graph_local_pos_from_control_pos(mouse_graph_control_local_pos)
+	print("[BehEditor] (open_node_ctx_menu) mouse_graph_local_pos = %s" % mouse_graph_local_pos)
+	
+	# Spawn the context menu (which needs the global click position instead.)
+	ctx_menu_node.position = graph.get_global_mouse_position()
+#	ctx_menu_graph.position = graph.get_global_mouse_position()
+#	ctx_menu_graph.size.x = 300
+#	ctx_menu_graph.size.y = 60
+	
+	ctx_menu_node.clear()
+	var entry_id = 0
+	for entry in _ctx_menu_node_entries:
+		ctx_menu_node.add_item(entry.name, entry.id)
+		if entry.action == null:
+			ctx_menu_node.set_item_disabled(entry_id, true)
+		entry_id += 1
+	for sep_idx in _ctx_menu_node_separators:
+		ctx_menu_node.add_separator("", sep_idx)
+	if !_ctx_menu_node_id_pressed_subscribed:
+		ctx_menu_node.id_pressed.connect(on_ctx_menu_node_id_pressed)
+		_ctx_menu_node_id_pressed_subscribed = true
+	ctx_menu_node.popup()
+
+
+func on_ctx_menu_node_id_pressed(pressed_id: int):
+	print("[BehEditor] (on_ctx_menu_node_id_pressed) For pressed_id: %s" % pressed_id)
+	var pressed_entry = null
+	for entry in _ctx_menu_node_entries:
+		if entry.id == pressed_id:
+			pressed_entry = entry
+			print("[BehEditor] (on_ctx_menu_node_id_pressed) Matched entry: %s" % pressed_entry.name)
+			break
+	if pressed_entry == null:
+		push_error("[BehEditor] (on_ctx_menu_node_id_pressed) Failed to find entry for pressed id %s" % pressed_id)
+		return
+	var action_name = pressed_entry["action"]
+	if action_name == null:
+		push_warning("[BehEditor] (on_ctx_menu_node_id_pressed) Ignoring pressed for actionless entry %s" % pressed_entry.name)
+		return
+	self.call(action_name)
 
 
 func init_beh_node_picker() -> EditorResourcePicker:
+	"""ContextMenu -> Add Node. Spawns an EditorResourcePicker intended for the Graph context menu."""
 	if _add_beh_node_picker != null:
 		return _add_beh_node_picker
 	_add_beh_node_picker = EditorResourcePicker.new()
 	_add_beh_node_picker.base_type = "BehNode"
-#	_add_beh_node_picker.resource_selected.connect(on_erp_res_selected)
 	_add_beh_node_picker.resource_changed.connect(on_erp_res_changed)
-#	side_ctn.add_child(_add_beh_node_picker)
 	return _add_beh_node_picker
 
 
 func on_erp_res_changed(res: Resource):
+	"""Called when the EditorResourcePicker resource changes in the New Node context."""
 	if res == null:
 		print("[BehEditor] Resource selector cleared")
 		return
@@ -350,15 +417,9 @@ func on_erp_res_changed(res: Resource):
 	print("[BehEditor] Adding new Orphan node for res instance id %s at pos %s" % [
 		res.get_instance_id(), _new_node_pos])
 	add_new_node(res, _new_node_pos)
-	ctx_add_node_panel.hide()
+	ctx_menu_graph.hide()
 	_add_beh_node_picker.edited_resource = null # Clear resource
 
-
-#func on_erp_res_selected(res: Resource, inspect: bool):
-##	editor_plugin.get_editor_interface().select_file(res.resource_path)
-#	_expects_node_target = true # Prepare to receive node target...
-#	editor_plugin.get_editor_interface().inspect_object(res)
-#	print("Got 'selected', path of resource is %s" % res.resource_path)
 
 # === Node Operations ===
 
@@ -375,6 +436,18 @@ func add_new_node(beh_node_inst: BehNode, node_spawn_pos: Vector2):
 	print("[BehEditor] Adding node at %s" % node_spawn_pos)
 	print("[BehEditor] OK, added new orphan node. active_tree orphans count is %s" % len(active_tree.orphans))
 	_should_update = true
+
+
+func try_get_node_from_name(node_name: StringName, silent_on_not_found: bool = false) -> Variant:
+	"""Returns BehEditorNode or null if not found."""
+	var node = graph.get_node_or_null(NodePath(node_name))
+	if node == null && !silent_on_not_found:
+		push_error("[BehEditor] (try_get_node_from_name) Failed to find node %s" % node_name)
+	var node_as_ed_node = node as BehEditorNode
+	if node_as_ed_node == null:
+		push_error("[BehEditor] (try_get_node_from_name) Found %s but was not BehEditorNode" % node_name)
+	return node_as_ed_node
+
 
 # === Node Selection ===
 
@@ -402,16 +475,261 @@ func receive_node_target():
 
 
 func subscribe_panel_btn_signals():
-	btn_reset_view_root.pressed.connect(center_view_on_root)
+#	btn_reset_view_root.pressed.connect(center_view_on_root)
 #	btn_open_beh.pressed.connect(file_open_dialog())
+	pass
 
 
 func subscribe_graph_edit_signals():
-	print("[BehEDitor] SUBSCRIBING TO GRAPH EDIT SIGNALS")
-	graph.popup_request.connect(open_context_menu)
-#	graph.open_context_menu.connect(open_context_menu)
+	print("[BehEditor] Subscribing to GraphEdit signals.")
+	# Basics
+	graph.popup_request.connect(on_request_ctx_menu)
 	graph.end_node_move.connect(on_graph_end_node_move)
 	graph.connection_request.connect(on_graph_connection_request)
+	# Other Interactions
+	graph.delete_nodes_request.connect(on_delete_nodes_request)
+	graph.node_selected.connect(on_node_selected)
+	graph.node_deselected.connect(on_node_deselected)
+	graph.copy_nodes_request.connect(on_copy_nodes_request)
+	graph.paste_nodes_request.connect(on_paste_nodes_request)
+	graph.disconnection_request.connect(on_disconnection_request)
+
+
+func on_delete_nodes_request(nodes = null):
+	if nodes == null || len(nodes) == 0: # Use selection
+		nodes = []
+		for sel_name in _selected_nodes.keys():
+			nodes.push_back(sel_name)
+		print("[BehEditor] (on_delete_nodes_request) Got NULL delete request (ctx menu action), set via %s selected nodes" % [
+			len(nodes)])
+	print("[BehEditor] (on_delete_nodes_request) Got delete nodes request: %s" % [nodes])
+	for del_node_name in nodes:
+		var del_node = graph.get_node_or_null(NodePath(del_node_name))
+		if del_node == null:
+			push_warning("[BehEditor] (on_delete_nodes_request) node to delete %s was null" % del_node_name)
+			continue
+		remove_editor_node(del_node)
+		# Now remove the node from the active_tree so an editor node doesn't respawn for it.
+		if del_node.beh == null:
+			push_warning("[BehEditor] (on_delete_nodes_request) Deleted ed_node that had no beh.")
+		else:
+			var removed_node = active_tree.remove_node(del_node.beh)
+			if removed_node == null:
+				push_warning("[BehEditor] Failed to remove a node from the active_tree (didn't exist)")
+			else:
+				pass # Don't free() the node, let it be garbage-collected if no other references exist?
+				# Because OTHER trees might have a reference to the node
+				# Except that's not really supposed to be true anymore
+				# Actually wait it can TOTALLY be true if you add it from the file system
+				# That's why you can't store -- shit................................
+				# CHILDREN also have to be stored on a PER-TREE BASIS
+				# SHIT .....................................................
+				# Only OWN NODE data can be stored in a file
+				# WEIRD ..............................
+				# Ok that's a pending refactor then ....................
+	_should_update = true
+
+
+func remove_editor_node(ed_node: BehEditorNode):
+	print("[BehEditor] (remove_editor_node) Remove (delete) ed_node %s" % ed_node)
+	if ed_node == null:
+		push_error("[BehEditor] (remove_editor_node) Wanted to remove a null BehEditorNode")
+	
+	# Remove the entry from _editor_node_map for this ed_node.
+	var ed_beh = ed_node.beh
+	if ed_beh == null:
+		push_warning("BehEditorNode won't have entry in _editor_node_map due to null ed_node.beh")
+	else:
+		var id = ed_beh.try_get_stable_id()
+		if id == null:
+			push_warning("[BehEditor] (remove_editor_node) Couldn't get stable_id of ed_node %s to remove it from the _editor_node_map before deleting" % [
+				ed_node.name])
+		else:
+			if !_editor_node_map.has(id):
+				push_warning("[BehEditor] (remove_editor_node) _editor_node_map lacked key stable_id %s entry for ed_node %s" % [
+					id, ed_node.name])
+			else:
+				_editor_node_map.erase(id)
+	on_node_deselected(ed_node, true) # Try deselect before deleting (avoids a warning)
+		
+	# Also remove CONNECTIONS to or from the node prior to removing it.
+	var conn_list = graph.get_connection_list()
+	var conns_from = []
+	var conns_to = []
+	for conn in conn_list:
+		if conn.from == ed_node.name:
+			conns_from.push_back(conn)
+		if conn.to == ed_node.name:
+			conns_to.push_back(conn)
+	for conn in conns_from:
+		print("[BehEditor] (remove_editor_node) Removing %s -> %s" % [conn.from, conn.to])
+		graph.disconnect_node(conn.from, conn.from_port, conn.to, conn.to_port)
+	for conn in conns_to:
+		print("[BehEditor] (remove_editor_node) Removing %s -> %s" % [conn.from, conn.to])
+		graph.disconnect_node(conn.from, conn.from_port, conn.to, conn.to_port)
+	
+	# Remove the BehEditorNode from the graph and free it.
+	graph.remove_child(ed_node)
+	ed_node.queue_free()
+	_should_update = true
+
+
+func clear_editor_nodes():
+	print("[BehEditor] Clearing editor nodes (unsubscribing first) and map cache for them.")
+	unsubscribe_editor_node_signals()
+	if len(_subscribed_editor_nodes) > 0:
+		push_warning("[BehEditor] Still had %s editor node subscriptions after attempting " +
+			"to unsubscribe from them.", len(_subscribed_editor_nodes))
+		_subscribed_editor_nodes.clear()
+	graph.clear_connections() # Clear connections, prevents errors when freeing GraphNodes
+	for key in _editor_node_map.keys():
+		var ed_node = _editor_node_map[key]
+		remove_editor_node(ed_node)
+	_editor_node_map.clear()
+
+
+func on_node_selected(node: Node):
+	print("[BehEditor] (on_node_selected) Node: %s" % node.name)
+	var node_parent = node.get_parent()
+	if node_parent == null: node_parent = "(null)"
+	var node_name = node.name
+	if node_parent != graph:
+		push_error("[BehEditor] (on_node_selected) Got selected node for unknown graph; its parent is %s" % node_parent.name)
+		return
+	if _selected_nodes.has(node.name):
+		push_error("[BehEditor] (on_node_selected) _selected_nodes ALREADY contained %s" % node.name)
+		return
+	_selected_nodes[node.name] = true
+	
+	_should_update = true
+
+
+func on_node_deselected(node: Node, allow_not_selected: bool = false):
+	print("[BehEditor] (on_node_deselected) Requested deselect node: %s" % node.name)
+	var node_parent = node.get_parent()
+	if node_parent == null: node_parent = "(null)"
+	var node_name = node.name
+	if node_parent != graph:
+		push_error("[BehEditor] (on_node_deselected) Got selected node for unknown graph; its parent is %s" % node_parent.name)
+		return
+	if !_selected_nodes.has(node.name) && !allow_not_selected:
+		push_error("[BehEditor] (on_node_deselected) _selected_nodes DID NOT contain %s" % node.name)
+		return
+	_selected_nodes.erase(node.name)
+	_should_update = true
+
+
+func on_copy_nodes_request(special_copy_buffer = null):
+	print("[BehEditor] (on_copy_nodes_request) Got copy signal.")
+	var use_buffer = _copy_nodes_buffer
+	if special_copy_buffer != null:
+		print("[BehEditor] (on_copy_nodes_request) Copy signal using special arg buffer instead of standard copy buffer.")
+		use_buffer = special_copy_buffer
+	use_buffer.clear()
+	for sel_key_name in _selected_nodes.keys():
+		var sel_node = graph.get_node_or_null(sel_key_name)
+		if sel_node == null:
+			push_error("[BehEditor] (on_copy_nodes_request) Did not find node %s to copy" % sel_key_name)
+			continue
+		var sel_node_as_ed_node = sel_node as BehEditorNode
+		if sel_node_as_ed_node == null:
+			push_error("[BehEditor] (on_copy_nodes_request) Node %s was not BehEditorNode" % sel_key_name)
+			continue
+		use_buffer.push_back(sel_node_as_ed_node)
+	pass
+
+
+func on_paste_nodes_request(special_copy_buffer = null):
+	print("[BehEditor] (on_paste_nodes_request) Got paste signal.")
+	var use_buffer = _copy_nodes_buffer
+	if special_copy_buffer != null:
+		print("[BehEditor] (on_copy_nodes_on_paste_nodes_requestrequest) Paste signal using special arg buffer instead of standard copy buffer.")
+		use_buffer = special_copy_buffer
+	# Track source obj -> duplicate obj so that we can reconstitute children connections
+	# after the duplication process.
+	var src_to_dup_map = {}
+	for copied_ed_node in use_buffer:
+		if copied_ed_node == null:
+			push_error("[BehEditor] (on_paste_nodes_request) Had null copied node")
+			continue
+		# Duplication method: Create a clone of the BehNode and add it to active_tree.
+		# A new editor node will automatically be created for it.
+		var src_beh: BehNode = copied_ed_node.beh
+		if src_beh == null:
+			push_error("Can't copy null src_beh (ed node: %s)" % copied_ed_node)
+			continue
+		var dup_beh = src_beh.clone(false)
+		var dup_pos = copied_ed_node.position_offset + Vector2(40, 40)
+		print("[BehEditor] (on_paste_nodes_request) ORIG stable_id: %s" % src_beh.try_get_stable_id())
+		print("[BehEditor] (on_paste_nodes_request) DUPE stable_id: %s" % dup_beh.try_get_stable_id())
+		active_tree.add_node(dup_beh)
+		# The newly created node won't have an editor offset until it is saved so that it gets a
+		# stable ID! Instead, queue a position for the node.
+		# This will be processed just saving BehNodes gives them paths in the update step.
+		# e.g. active_tree.set_editor_offset(dup_beh, dup_pos) -> is NOT possible due to lack of stable_id
+		_pending_node_positions[dup_beh] = dup_pos
+		if src_beh != null:
+			src_to_dup_map[src_beh] = dup_beh
+	# Recreate children relationships. We do this by
+	# removing the children of a dup_beh (which refer to src_behs) and re-adding them IF they
+	# are present in our map of duplicated BehNodes.
+	for src_beh in src_to_dup_map.keys():
+		var dup_beh: BehNode = src_to_dup_map[src_beh]
+		var children_to_remove = []
+		var children_to_replace = []
+		for src_child in dup_beh.get_children():
+			if src_to_dup_map.has(src_child):
+				children_to_replace.push_back(src_child)
+			else:
+				children_to_remove.push_back(src_child)
+		for src_child in children_to_remove:
+			# We set ignore_orphan_update to true because pasting will never cause orphaning.
+			active_tree.try_remove_parent_child_relationship(dup_beh, src_child, true)
+		for src_child in children_to_replace:
+			active_tree.try_remove_parent_child_relationship(dup_beh, src_child, true)
+		for src_child in children_to_replace:
+			var dup_child = src_to_dup_map[src_child]
+			if !dup_beh.try_add_child(dup_child):
+				push_error("[BehEditor] (on_paste_nodes_request) Failed to add duplicated child %s to parent %s" % [
+					dup_child, dup_beh])
+			else:
+				pass # No issue.
+	_should_update = true # Will save, assign paths, resubscribe to ed_node signals, etc
+
+
+func on_duplicate_nodes_request():
+	"""Invoked via context menu only. Perform a copy & paste using a special duplication buffer.
+	Using the special buffer prevents the standard copy buffer from being replaced when calling
+	on_copy_nodes_request"""
+	var special_buffer = []
+	on_copy_nodes_request(special_buffer)
+	on_paste_nodes_request(special_buffer)
+
+
+func on_disconnection_request(from_node: StringName, from_port: int, to_node: StringName, to_port: int):
+	"""Called by the disconnection_request signal from the graph."""
+	print("[BehEditor] (on_disconnection_request) Got disconnect request for conn from %s -> to %s" % [
+		from_node, to_node])
+	graph.disconnect_node(from_node, from_port, to_node, to_port)
+	# Remember to also remove the parent-child relationship, otherwise the connection will be
+	# auto-added back in the next update.
+	var node_parent = try_get_node_from_name(from_node)
+	var node_child = try_get_node_from_name(to_node)
+	if node_parent == null || node_child == null:
+		push_warning("[BehEditor] (on_disconnection_request) Skipping; parent or child was null. Parent: %s -> Child: %s" % [
+			node_parent, node_child])
+	else:
+		var beh_parent = node_parent.beh
+		var beh_child = node_child.beh
+		if beh_parent == null || beh_child == null:
+			push_warning("[BehEditor] (on_disconnection_request) Skipping; parent or child beh was null. Parent beh: %s -> Child beh: %s" % [
+				beh_parent, beh_child])
+		# Remove the parent->child relationship.
+		if !active_tree.try_remove_parent_child_relationship(beh_parent, beh_child):
+			push_warning("[BehEditor] (on_disconnection_request) Failed to remove parent->child relationship. Parent beh: %s -> Child beh: %s" % [
+				beh_parent, beh_child])
+	# Refresh.
+	_should_update = true
 
 
 func subscribe_editor_node_signals():
@@ -421,9 +739,13 @@ func subscribe_editor_node_signals():
 		var is_subscribed = _subscribed_editor_nodes.has(id)
 		if !is_subscribed:
 			var ed_node: BehEditorNode = _editor_node_map[id]
-			var callable = func(): on_editor_node_pos_changed(id)
+			### TEST FIX: Getting weird "missing function '' in BehEditor" error when moving ed_nodes
+#			var callable = func(): on_editor_node_pos_changed(id)
+			var callable = on_editor_node_pos_changed
+			
 			ed_node.position_offset_changed.connect(callable)
 			_subscribed_editor_nodes[id] = ["position_offset_changed", callable]
+
 
 func unsubscribe_editor_node_signals():
 	"""Cleans up editor node signals. Call this before freeing editor nodes."""
@@ -436,22 +758,37 @@ func unsubscribe_editor_node_signals():
 			var callable = signal_callable_pair[1]
 			ed_node.disconnect(signal_name, callable)
 			_subscribed_editor_nodes.erase(id)
-		
 
 
-func on_editor_node_pos_changed(node_id: StringName):
-	if !_editor_node_map.has(node_id):
-		push_warning("[BehEditor] Got on_editor_node_dragged for unknown editor_node id %s" % node_id)
-		return
-	var ed_node: BehEditorNode = _editor_node_map[node_id]
-	if ed_node.beh == null:
-		push_error("[BehEditor] Node ID %s is missing a backing NodeBeh" % node_id)
-		return
-	# Update the position!
-	active_tree.set_editor_offset(ed_node.beh, ed_node.position_offset)
-#	print("[BehEditor] Successfully set a tree's NodeBeh editor offset via ed_node.position_offset! Value: %s" % [
-#		active_tree.get_editor_offset(ed_node.beh)])
+#func on_editor_node_pos_changed(node_id: StringName):
+#	if !_editor_node_map.has(node_id):
+#		push_warning("[BehEditor] Got on_editor_node_dragged for unknown editor_node id %s" % node_id)
+#		return
+#	var ed_node: BehEditorNode = _editor_node_map[node_id]
+#	if ed_node.beh == null:
+#		push_error("[BehEditor] Node ID %s is missing a backing NodeBeh" % node_id)
+#		return
+#	# Update the position!
+#	active_tree.set_editor_offset(ed_node.beh, ed_node.position_offset)
+##	print("[BehEditor] Successfully set a tree's NodeBeh editor offset via ed_node.position_offset! Value: %s" % [
+##		active_tree.get_editor_offset(ed_node.beh)])
+func on_editor_node_pos_changed():
+	# Argumentless implementation: Update all editor nodes
+	for ed_node in get_editor_nodes():
+		var ed_node_pos = ed_node.position_offset
+		if ed_node.beh != null:
+			active_tree.set_editor_offset(ed_node.beh, ed_node_pos)
 	pass
+
+
+func get_editor_nodes() -> Array[BehEditorNode]:
+	var arr: Array[BehEditorNode] = []
+	for child in graph.get_children():
+		var child_ed_node = child as BehEditorNode
+		if child_ed_node == null:
+			continue
+		arr.push_back(child_ed_node)
+	return arr
 
 
 func on_graph_end_node_move():
@@ -499,56 +836,4 @@ func get_view_center_offset() -> Vector2:
 	return graph.size / 2
 
 
-func center_view_on_root():
-	print("[BehEditor] (center_view_on_root) Disabled for now.")
-#	if active_tree == null || !active_tree.has_roots(): return
-#	if active_tree.has_roots
-#	if entry == null:
-#		return
-#	var entry_pos_ofs = entry.get_center()
-#	graph.scroll_offset = entry_pos_ofs - get_view_center_offset()
-	pass
-
-
-#func auto_layout_tree(tree: BehTree):
-#	"""Sets editor node positions of the tree"""
-
-
-# === IO ===
-
-#var open_dialog: EditorFileDialog = null
-#
-#
-#func file_open_dialog():
-#	print("FILE OPEN")
-#	open_dialog = EditorFileDialog.new()
-#	open_dialog.add_filter("*.tres", )
-
-
-# === Helpers ===
-
-
-# TODO: DELETE
-### Impl for get "self.entry" virtual node.
-#func _get_or_construct_entry() -> BehEditorNode:
-#	# Ensures the root node exists and is accessible via _root.
-#	if _bak_entry == null:
-#		# Check by name.
-#		var existing_root = graph.get_node_or_null("Entry")
-#		if existing_root != null && not (existing_root is BehEditorNodeEntry):
-#			print("[BehEditor] Existing Entry root is of the wrong type; recreating it.")
-#			existing_root.queue_free()
-##			push_error("[BehEditor] Child 'Entry' is not of type BehEditorNode. Invalid setup, returning null.")
-##			return null
-#		_bak_entry = existing_root as BehEditorNodeEntry
-#		if _bak_entry == null:
-#			# Make.
-#			var new_entry = BehEditorNodeEntry.new()
-#			new_entry.init_node_view()
-#			graph.add_child(new_entry)
-#			_bak_entry = new_entry
-#	if _bak_entry == null:
-#		push_error("[BehEditor] Failed to get or create root node!")
-#	return _bak_entry
-#
 

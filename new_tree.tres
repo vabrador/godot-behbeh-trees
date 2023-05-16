@@ -1,70 +1,112 @@
-[gd_resource type="Resource" script_class="BehTree" load_steps=12 format=3 uid="uid://c1hpic61cbnkj"]
+[gd_resource type="Resource" script_class="BehTree" load_steps=2 format=3 uid="uid://cvc6knbob0215"]
 
-[ext_resource type="Script" path="res://addons/behbeh/tree_impls/beh_node_a_root.gd" id="1_ae3dc"]
-[ext_resource type="Script" path="res://addons/behbeh/tree_impls/beh_node_sequence.gd" id="1_chbe0"]
-[ext_resource type="Script" path="res://addons/behbeh/tree/beh_tree.gd" id="1_ydrhi"]
-
-[sub_resource type="Resource" id="Resource_e74d4"]
-resource_name = "BEHNODE__res://new_tree.tres::Resource_e74d4__-9223369511934039519"
-script = ExtResource("1_chbe0")
-
-[sub_resource type="Resource" id="Resource_wjwh4"]
-resource_name = "BEHNODE__res://new_tree.tres::Resource_wjwh4__-9223369606607869308"
-script = ExtResource("1_ae3dc")
-child = SubResource("Resource_e74d4")
-
-[sub_resource type="Resource" id="Resource_svqfi"]
-resource_name = "BEHNODE__res://new_tree.tres::Resource_svqfi__-9223369637930931322"
-script = ExtResource("1_chbe0")
-
-[sub_resource type="Resource" id="Resource_snmqf"]
-resource_name = "BEHNODE__res://new_tree.tres::Resource_snmqf__-9223369937202910586"
-script = ExtResource("1_ae3dc")
-child = SubResource("Resource_svqfi")
-
-[sub_resource type="Resource" id="Resource_4c0gb"]
-resource_name = "BEHNODE__res://new_tree.tres::Resource_4c0gb__-9223369949366391884"
-script = ExtResource("1_ae3dc")
-
-[sub_resource type="Resource" id="Resource_hxeyd"]
-resource_name = "BEHNODE__res://new_tree.tres::Resource_hxeyd__-9223369981897413906"
-script = ExtResource("1_ae3dc")
-
-[sub_resource type="Resource" id="Resource_hfdc4"]
-resource_name = "BEHNODE__res://new_tree.tres::Resource_hfdc4__-9223369942974273984"
-script = ExtResource("1_ae3dc")
-
-[sub_resource type="Resource" id="Resource_m3kro"]
-resource_name = "BEHNODE__res://new_tree.tres::Resource_m3kro__-9223369749264536801"
-script = ExtResource("1_ae3dc")
+[ext_resource type="Script" path="res://addons/behbeh/tree/beh_tree.gd" id="1_i2plq"]
 
 [resource]
-script = ExtResource("1_ydrhi")
-roots = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([SubResource("Resource_wjwh4"), SubResource("Resource_snmqf"), SubResource("Resource_4c0gb"), SubResource("Resource_hxeyd"), SubResource("Resource_hfdc4"), SubResource("Resource_m3kro")])
+script = ExtResource("1_i2plq")
+roots = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([])
 node_meta = {
-"BEHNODE__res://new_tree.tres::Resource_4c0gb__-9223369949366391884": {
-"ed_offset": Vector2(0, 200)
+"BEHNODE__res://new_tree.tres::Resource_01n0g__-9223356689879588361": {
+"ed_offset": Vector2(440, 140)
 },
-"BEHNODE__res://new_tree.tres::Resource_e74d4__-9223369511934039519": {
-"ed_offset": Vector2(400, 200)
+"BEHNODE__res://new_tree.tres::Resource_0rpyh__-9223356793797664531": {
+"ed_offset": Vector2(920, -40)
 },
-"BEHNODE__res://new_tree.tres::Resource_hfdc4__-9223369942974273984": {
-"ed_offset": Vector2(400, 0)
+"BEHNODE__res://new_tree.tres::Resource_1k423__-9223356689778925059": {
+"ed_offset": Vector2(760, 100)
 },
-"BEHNODE__res://new_tree.tres::Resource_hxeyd__-9223369981897413906": {
-"ed_offset": Vector2(600, 0)
+"BEHNODE__res://new_tree.tres::Resource_2jpfk__-9223368581251527606": {
+"ed_offset": Vector2(640, 0)
 },
-"BEHNODE__res://new_tree.tres::Resource_m3kro__-9223369749264536801": {
-"ed_offset": Vector2(600, 200)
+"BEHNODE__res://new_tree.tres::Resource_3cfxr__-9223356689980251663": {
+"ed_offset": Vector2(760, 200)
 },
-"BEHNODE__res://new_tree.tres::Resource_snmqf__-9223369937202910586": {
-"ed_offset": Vector2(0, 400)
+"BEHNODE__res://new_tree.tres::Resource_3oclh__-9223338238901413401": {
+"ed_offset": Vector2(480, 0)
 },
-"BEHNODE__res://new_tree.tres::Resource_svqfi__-9223369637930931322": {
-"ed_offset": Vector2(400, 400)
+"BEHNODE__res://new_tree.tres::Resource_3sdho__-9223337609906809126": {
+"ed_offset": Vector2(160, -20)
 },
-"BEHNODE__res://new_tree.tres::Resource_wjwh4__-9223369606607869308": {
-"ed_offset": Vector2(0, 0)
+"BEHNODE__res://new_tree.tres::Resource_4t3d0__-9223369779413194064": {
+"ed_offset": Vector2(760, 160)
+},
+"BEHNODE__res://new_tree.tres::Resource_cfwsw__-9223337584371897929": {
+"ed_offset": Vector2(460, 20)
+},
+"BEHNODE__res://new_tree.tres::Resource_g3qij__-9223337515635631928": {
+"ed_offset": Vector2(480, 60)
+},
+"BEHNODE__res://new_tree.tres::Resource_gb5ux__-9223369122400629074": {
+"ed_offset": Vector2(620, -120)
+},
+"BEHNODE__res://new_tree.tres::Resource_gstkt__-9223338512319703863": {
+"ed_offset": Vector2(395, 38)
+},
+"BEHNODE__res://new_tree.tres::Resource_inaev__-9223368070989278392": {
+"ed_offset": Vector2(620, -40)
+},
+"BEHNODE__res://new_tree.tres::Resource_jnkje__-9223362223374527149": {
+"ed_offset": Vector2(214, 19)
+},
+"BEHNODE__res://new_tree.tres::Resource_jrmel__-9223367872246377303": {
+"ed_offset": Vector2(560, -140)
+},
+"BEHNODE__res://new_tree.tres::Resource_k8556__-9223338883398235992": {
+"ed_offset": Vector2(220, 20)
+},
+"BEHNODE__res://new_tree.tres::Resource_m41bo__-9223331164737955005": {
+"ed_offset": Vector2(680, 120)
+},
+"BEHNODE__res://new_tree.tres::Resource_n0ckv__-9223338272908830312": {
+"ed_offset": Vector2(120, -20)
+},
+"BEHNODE__res://new_tree.tres::Resource_n3h52__-9223356869261582194": {
+"ed_offset": Vector2(740, -200)
+},
+"BEHNODE__res://new_tree.tres::Resource_nf3sy__-9223369779312530843": {
+"ed_offset": Vector2(240, 120)
+},
+"BEHNODE__res://new_tree.tres::Resource_p13ew__-9223368196331869689": {
+"ed_offset": Vector2(240, -80)
+},
+"BEHNODE__res://new_tree.tres::Resource_p8qeo__-9223356689678261757": {
+"ed_offset": Vector2(220, 140)
+},
+"BEHNODE__res://new_tree.tres::Resource_qc08t__-9223331293368876753": {
+"ed_offset": Vector2(280, 180)
+},
+"BEHNODE__res://new_tree.tres::Resource_rr5fo__-9223331341922203556": {
+"ed_offset": Vector2(240, 0)
+},
+"BEHNODE__res://new_tree.tres::Resource_rtcgv__-9223331461258540907": {
+"ed_offset": Vector2(500, 60)
+},
+"BEHNODE__res://new_tree.tres::Resource_s8mro__-9223368070888615090": {
+"ed_offset": Vector2(260, 40)
+},
+"BEHNODE__res://new_tree.tres::Resource_tacvf__-9223367403138640397": {
+"ed_offset": Vector2(600, -200)
+},
+"BEHNODE__res://new_tree.tres::Resource_vy5aa__-9223368165948322452": {
+"ed_offset": Vector2(560, -140)
+},
+"BEHNODE__res://new_tree.tres::Resource_vy5t5__-9223331164637291085": {
+"ed_offset": Vector2(160, 180)
+},
+"BEHNODE__res://new_tree.tres::Resource_wpgvk__-9223331223592434885": {
+"ed_offset": Vector2(600, 100)
+},
+"BEHNODE__res://new_tree.tres::Resource_wrndc__-9223295393800839839": {
+"ed_offset": Vector2(280, 100)
+},
+"BEHNODE__res://new_tree.tres::Resource_wta16__-9223367548798429765": {
+"ed_offset": Vector2(460, -100)
+},
+"BEHNODE__res://new_tree.tres::Resource_xpn2q__-9223295393901503466": {
+"ed_offset": Vector2(660, 80)
+},
+"BEHNODE__res://new_tree.tres::Resource_xvi67__-9223369122299976282": {
+"ed_offset": Vector2(240, 100)
 }
 }
 orphans = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([])

@@ -9,6 +9,20 @@ extends BehNode
 # === Overrides ===
 
 
+func tick(dt: float, bb: Dictionary) -> BehConst.Status:
+	if child == null:
+		return BehConst.Status.Success
+	return child.tick(dt, bb)
+
+
+func clone(deep: bool) -> BehNode:
+	var dup = super.clone(deep)
+	if self.child != null && deep:
+		var dup_child = child.clone(deep)
+		dup.child = dup_child
+	return dup
+
+
 func get_is_root() -> bool: return true
 
 
@@ -16,6 +30,9 @@ func get_children() -> Array[BehNode]:
 	var arr: Array[BehNode] = []
 	if child != null: arr.push_back(child)
 	return arr
+
+
+func get_can_add_child() -> bool: return true
 
 
 func try_add_child(new_child: BehNode) -> bool:
@@ -26,6 +43,14 @@ func try_add_child(new_child: BehNode) -> bool:
 	print("[BehNodeARoot] try_add_child successfully added a child %s" % new_child)
 	child = new_child
 	child_added.emit(new_child)
+	return true
+
+
+func remove_child(child_to_remove: BehNode) -> bool:
+	if child == null: return false # No child to remove.
+	if self.child != child_to_remove: return false # Non-matching child.
+	child_removed.emit(self.child)
+	self.child = null
 	return true
 
 

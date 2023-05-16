@@ -100,14 +100,50 @@ text = "Root Id: (none)"
 layout_mode = 2
 text = "Tracked Orphan Count: (none)"
 
+[node name="TextEdit" type="TextEdit" parent="HCtn/SideCtnMargins/SideCtn/DbgInfoCtn"]
+visible = false
+custom_minimum_size = Vector2(0, 300)
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+placeholder_text = "(Debug Output Console)"
+editable = false
+
 [node name="GraphEdit" type="GraphEdit" parent="HCtn"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
+right_disconnects = true
 arrange_nodes_button_hidden = true
 script = ExtResource("3_wquae")
 
 [node name="ContextPopupMenu" type="PopupMenu" parent="."]
+size = Vector2i(200, 143)
+visible = true
+item_count = 5
+item_0/text = "(ph) node name"
+item_0/id = 0
+item_0/disabled = true
+item_1/text = "Copy"
+item_1/id = 1
+item_2/text = "Paste"
+item_2/id = 2
+item_3/text = "Clear Copy Buffer"
+item_3/id = 3
+item_4/text = "Duplicate"
+item_4/id = 4
+
+[node name="PanelContainer" type="PanelContainer" parent="ContextPopupMenu"]
+visible = false
+custom_minimum_size = Vector2(200, 0)
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="ContextPopupMenu/PanelContainer"]
+layout_mode = 2
+
+[node name="Button" type="Button" parent="ContextPopupMenu/PanelContainer/VBoxContainer"]
+layout_mode = 2
+text = "Placeholder Option"
 
 [node name="ContextAddNodePopupPanel" type="PopupPanel" parent="."]
 title = "Add Node"
