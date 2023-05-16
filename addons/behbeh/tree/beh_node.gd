@@ -123,17 +123,18 @@ func get_all_children(include_self: bool = true) -> Array[BehNode]:
 
 func get_all_children_with_parent(include_self: bool = true) -> Array:
 	"""As get_all_children but returns [node, parent] pairs. If self is a root, parent is null."""
-	var all_children = []
+	var all_pairs = []
 	var to_visit = [[self, null]]
 	while len(to_visit) > 0:
 		var curr_pair = to_visit.pop_front()
-		var curr_parent = curr_pair[0]
-		all_children.push_back(curr_pair)
-		var children = curr_parent.get_children()
-		children.reverse()
-		for child in children:
-			to_visit.push_front([child, curr_parent])
-	return all_children
+		all_pairs.push_back(curr_pair)
+		var curr_child = curr_pair[0]
+#		var curr_parent = curr_pair[1]
+		var child_children = curr_child.get_children()
+		child_children.reverse()
+		for child_child in child_children:
+			to_visit.push_front([child_child, curr_child])
+	return all_pairs
 
 
 func try_get_stable_id() -> Variant:

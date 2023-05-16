@@ -15,6 +15,7 @@ var is_orphan: bool:
 	set(value):
 		if _is_orphan != value: _needs_update = true
 		_is_orphan = value
+var dbg_label: Label = null
 
 
 # === Godot Events ===
@@ -69,7 +70,13 @@ func init_node_view():
 	
 	# Slot names?
 	# Interestingly this doesn't get drawn. I wonder how we draw it...
+	# Answer: Probably just labels inside the node?
 	slot0.name = "Foo Bar" 
+	
+	# Initialize a label on the interior of the node with debug information.
+	if self.dbg_label == null:
+		self.dbg_label = Label.new()
+		self.add_child(dbg_label)
 
 
 func update_view():
@@ -78,6 +85,9 @@ func update_view():
 	else:
 		self.add_theme_color_override("title_color", beh.editor_get_color())
 	
+	# Debug label text.
+	dbg_label.text = "name: ...%s\nres_name: ...%s" % [\
+		name.substr(len(String(name)) - 6), self.name.substr(len(String(name)) - 6)]
 	
 	if !validate_beh():
 		render_view_invalid()

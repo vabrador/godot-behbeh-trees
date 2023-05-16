@@ -13,8 +13,8 @@ const EDITOR_OFFSET_KEY: String = "ed_offset"
 ## simultaneously.
 @export var roots: Array[BehNode] = []
 
-## Node metadata for in-tree or orphaned BehNodes. This includes "ed_offset", which tracks
-## the node's in-editor tree position, if it exists.
+## Key: BehNode stable_id. Node metadata for in-tree or orphaned BehNodes.
+## This includes "ed_offset", which tracks the node's in-editor tree position, if it exists.
 @export var node_meta: Dictionary = {}
 
 ## Parent-less nodes that are NOT roots that were added to this tree at some point. Usually used
@@ -27,6 +27,7 @@ const EDITOR_OFFSET_KEY: String = "ed_offset"
 
 
 var _subscribed_nodes: Dictionary = {}
+var _ignore_next_orphan_operation: BehNode = null # Set to a BehNode to ignore that node's orphaning once.
 
 
 signal tree_changed()
@@ -46,20 +47,52 @@ func subscribe_node_signals(beh: BehNode):
 
 
 func on_child_added(par_beh: BehNode, child_beh: BehNode):
-	print("[BehTree] signal child_added: %s -> %s" % [par_beh, child_beh])
-	# New child loses orphan status (tree no longer needs to track it).
-	var orphan_id = orphans.find(child_beh)
-	if orphan_id != -1:
-		orphans.remove_at(orphan_id)
+	print("[BehTree] (on_child_added) Signal: child_added: %s -> %s" % [par_beh, child_beh])
+	# New child loses root-orphan status (tree no longer needs to track it).
+	var found_in_root_orphans = find_node_in_orphans(child_beh, true)
+	if found_in_root_orphans[0] != -1:
+		var orphan_tree_idx = found_in_root_orphans[0]
+		var parent_node = found_in_root_orphans[1]
+		var orphan_node = found_in_root_orphans[2]
+		if parent_node != null:
+			push_error("[BehTree] (on_child_added) Tried to find child_beh as root only but got returned with a non-null parent unexpectedly. Returned parent %s -> child %s" % [
+				parent_node, orphan_node])
+		else:
+			orphans.remove_at(orphan_tree_idx) # Remove root orphan.
 		tree_changed.emit()
+	else:
+		push_error("[BehTree] (on_child_added) Got added child but orphan_id not found in orphan roots. Child: %s" % [
+			child_beh])
+	pass
 
 
 func on_child_removed(par_beh: BehNode, child_beh: BehNode):
-	print("[BehTree] signal child_removed: %s -> %s" % [par_beh, child_beh])
-	# New child gains orphan status (tree must track it).
-	# All of this child's children are also orphans but are tracked via the child
-	# relationship of the top-level orphan.
-	orphans.push_back(child_beh)
+	print("[BehTree] (on_child_removed) Signal: child_removed: %s -> %s" % [par_beh, child_beh])
+	var will_ignore_orphaning = false
+	if _ignore_next_orphan_operation != null:
+		if _ignore_next_orphan_operation == child_beh:
+			# Possibly ignore the orphaning, consuming the ignore.
+			_ignore_next_orphan_operation = null
+			will_ignore_orphaning = true
+			print("[BehTree] (on_child_removed) _ignore_next_orphan_operation CONSUMED")
+		else:
+			# Do NOT consume the next-orphan operation.
+#			push_error("[BehTree] (on_child_removed) Invalid use of _ignore_next_orphan_operation, expected to ignore an orphaning for %s but child %s was just reported as removed." % [
+#				_ignore_next_orphan_operation, child_beh])
+#			_ignore_next_orphan_operation = null
+			print("[BehTree] (on_child_removed) NOT consuming _ignore_next_orphan_operation. Removed child was %s, but _ignore_next_orphan_operation target is %s" % [
+				child_beh, _ignore_next_orphan_operation])
+	if !will_ignore_orphaning:
+		# New child gains orphan status (tree must track it).
+		# All of this child's children are also orphans but are tracked via the child
+		# relationship of the top-level orphan.
+		print("[BehTree] (on_child_removed) ORPHANING child: %s" % child_beh)
+		_push_orphan(child_beh)
+#		if !get_is_orphan(child_beh): # Might already be an orphan b/c it was child-of-orphan
+#			print("[BehTree] (on_child_removed) ORPHANING child: %s" % child_beh)
+#			_push_orphan(child_beh)
+#		else:
+#			print("[BehTree] (on_child_removed) NOT orphaning already-orphan-list child: %s" % child_beh)
 	tree_changed.emit()
 
 
@@ -82,37 +115,78 @@ func add_node(node: BehNode):
 	"""Adds a new node. If the node is a root, it's added to the roots list."""
 	print("[BehTree] Got add_node: %s" % node)
 	if node.get_is_root():
-		roots.push_back(node)
+		_push_root(node)
+#		roots.push_back(node) # TODO: delete
 	else:
-		orphans.push_back(node)
+		_push_orphan(node)
+#		orphans.push_back(node) # TODO deleteme
 	subscribe_node_signals(node)
+
+
+func _push_root(node: BehNode):
+	"""Adds a node to the roots list. Confirms that the node is not ALREADY in a root tree,
+	which would be an error."""
+	var node_in_roots = find_node_in_roots(node)
+	if node_in_roots[0] != -1:
+		push_error("[BehTree] (_push_root) Node was already tracked by a root tree! Node: %s" % node)
+	else:
+		print("[BehTree] (_push_orphan) Newly tracked root: %s" % node)
+		roots.push_back(node)
+
+
+func _push_orphan(node: BehNode):
+	"""Adds a node to the orphans list. Confirms that the node is not ALREADY in an orphan tree,
+	which would be an error."""
+	var node_in_orphans = find_node_in_orphans(node)
+	if node_in_orphans[0] != -1:
+		push_error("[BehTree] (_push_orphan) Node was already tracked by an orphan tree! Node: %s" % node)
+	else:
+		print("[BehTree] (_push_orphan) Newly tracked orphan: %s" % node)
+		orphans.push_back(node)
 
 
 func remove_node(node: BehNode) -> BehNode:
 	"""Removes a node from the tree. If the BehNode was found and removed, it is returned;
 	otherwise if the BehNode was not found in the tree, this func returns null."""
-	var to_return = null
+	var del_node = null
+	
 	var found_in_roots = find_node_in_roots(node)
 	if found_in_roots[0] != -1:
 		# Remove from tree. This will create orphans in if the node has children.
 		var root_idx = found_in_roots[0]
 		var node_parent = found_in_roots[1]
 		var found_node = found_in_roots[2]
-		to_return = found_node
+		del_node = found_node
 		print("[BehTree] (remove_node) Found node to remove. Calling _inner_remove_node with roots list ...")
+		if node_parent != null:
+			# Ignore orphaning of found_node from its parent, as we're going to delete it
+			_ignore_next_orphan_operation = found_node
+			print("[BehTree] (remove_node) Had parent, so _ignore_next_orphan_operation SET TO: %s" % _ignore_next_orphan_operation)
 		_inner_remove_node_from_tree(found_node, node_parent, self.roots, root_idx, self.orphans)
-		return to_return
 	var found_in_orphans = find_node_in_orphans(node)
 	if found_in_orphans[0] != -1:
 		var orphan_root_idx = found_in_orphans[0]
 		var node_parent = found_in_orphans[1]
 		var found_node = found_in_orphans[2]
-		to_return = found_node
+		del_node = found_node
 		print("[BehTree] (remove_node) Found node to remove. Calling _inner_remove_node with orphans list ...")
+		if node_parent != null:
+			# Ignore orphaning of found_node from its parent, as we're going to delete it
+			_ignore_next_orphan_operation = found_node
+			print("[BehTree] (remove_node) Had parent, so _ignore_next_orphan_operation SET TO: %s" % _ignore_next_orphan_operation)
 		_inner_remove_node_from_tree(found_node, node_parent, self.orphans, orphan_root_idx, self.orphans)
-		return to_return
-	print("[BehTree] (remove_node) Did not find node %s in root trees nor orphan trees." % node)
-	return null
+	
+	if del_node == null:
+		print("[BehTree] (remove_node) Did not find node %s in root trees nor orphan trees." % node)
+		return null
+	# Before returning, Also remove node_meta information associated with this node.
+	var del_node_id = del_node.try_get_stable_id()
+	if del_node_id == null:
+		push_error("[BehTree] (_inner_remove_node_from_tree) Missing stable_id for node-being-deleted %s" %
+			del_node)
+	else:
+		node_meta.erase(del_node_id)
+	return del_node
 
 
 static func _inner_remove_node_from_tree(
@@ -127,23 +201,26 @@ static func _inner_remove_node_from_tree(
 	removed."""
 	print("[BehTree] (_inner_remove_node_from_tree) Remove tree_idx %s, node_parent %s, found_node %s" % [
 		tree_idx, node_parent, found_node])
+
+	# Prior to children -- if necessary remove the found node as a child from its OWN parent.
+	if node_parent != null:
+		print("[BehTree] (_inner_remove_node_from_tree) Removing NON-TREE-root del-node from own parent ...")
+		# The node is NOT itself a tree root, so just remove it as a child of its parent.
+		if !node_parent.remove_child(found_node):
+			push_warning("[BehTree] (_inner_remove_node_from_tree) Node %s reported failed to remove child %s (child did not exist)" % [node_parent, found_node])
+	else:
+		# The node itself IS a tree root, so remove it from the trees list
+		print("[BehTree] (_inner_remove_node_from_tree) Removing tree idx %s" % tree_idx)
+		from_trees.remove_at(tree_idx)
 	
-	# The node's children are now orphans.
+	# The node's children are now root orphans.
+	print("[BehTree] (_inner_remove_node_from_tree) Removing children of del-node if any ...")
 	var children = found_node.get_children()
 	for child in children:
 		if !found_node.remove_child(child):
 			push_warning("[BehTree] (_inner_remove_node_from_tree) Node %s reported failed to remove child %s (child did not exist)" % [found_node, child])
-		# Child is now an orphan.
-		push_orphans_list.push_back(child)
-	# Also remove the found node as a child from its parent.
-	if node_parent != null:
-		# The node is NOT itself a root, so just remove it as a child of its parent.
-		if !node_parent.remove_child(found_node):
-			push_warning("[BehTree] (_inner_remove_node_from_tree) Node %s reported failed to remove child %s (child did not exist)" % [node_parent, found_node])
-	else:
-		# The node itself IS a root, so remove it from the roots list
-		print("[BehTree] (_inner_remove_node_from_tree) Removing tree idx %s" % tree_idx)
-		from_trees.remove_at(tree_idx)
+		# Child is now an orphan. No need to orphan here; signal for removing children will take care of this!
+#		push_orphans_list.push_back(child)
 	pass
 
 
@@ -171,6 +248,8 @@ func try_remove_parent_child_relationship(
 	if found_in_orphans[0] != -1:
 		if !ignore_orphan_update: child_to_orphan = child # Will orphan the child.
 		valid_parent = true # Ignore the orphan update; will just call remove_child.
+	if found_in_roots[0] != -1 && found_in_orphans[0] != -1:
+		push_error("[BehTree] (try_remove_parent_child_relationship) Node %s was found in both roots and orphans. Node: %s" % parent)
 	if !valid_parent:
 		push_error("[BehTree] (try_remove_parent_child_relationship) Failed to find parent in the tree.")
 		return false
@@ -185,14 +264,24 @@ func try_remove_parent_child_relationship(
 				child, parent])
 			return false
 		else:
+			print("[BehTree] (try_remove_parent_child_relationship) Calling parent.remove_child on parent %s ..." % parent)
+			if ignore_orphan_update:
+				# Will get a signal from the remove_child op. To ignore orphaning, we set a flag
+				# for the signal callback to consume instead of orphaning.
+				_ignore_next_orphan_operation = child
+				print("[BehTree] (try_remove_parent_child_relationship) _ignore_next_orphan_operation SET TO: %s" % _ignore_next_orphan_operation)
 			if !parent.remove_child(child):
 				push_error("[BehTree] (try_remove_parent_child_relationship) remove_child() failed for parent %s -> child %s" % [
 					parent, child])
 				return false
 			else:
-				# Finalize orphaning the child.
-				if child_to_orphan != null:
-					self.orphans.push_back(child_to_orphan)
+				print("[BehTree] (try_remove_parent_child_relationship) Removed child %s" % child)
+				# Note: NO NEED to orphan here; GraphNode subscription of remove_child
+				# handles the orphaning operation! So this would be a duplicate.
+#				# Finalize orphaning the child.
+#				if child_to_orphan != null:
+#					self.orphans.push_back(child_to_orphan)
+#					print("[BehTree] (try_remove_parent_child_relationship) Finished. Pushed child to orphans list. Child: %s" % child)
 				return true
 	pass
 
@@ -216,7 +305,7 @@ static func find_node_in_tree_list(node: BehNode, tree_roots: Array[BehNode]) ->
 	if root_idx == -1:
 		print("[BehTree] (find_node_in_tree_list) NOT FOUND")
 	else:
-		print("[BehTree] (find_node_in_tree_list) Returning found in given tree_roots: %s" % [[root_idx, parent, node]])
+		print("[BehTree] (find_node_in_tree_list) Returning found in given tree list: %s" % [[root_idx, parent, node]])
 	if root_idx == -1: # Not found.
 		return [-1, null, null]
 	return [root_idx, parent, node]
@@ -230,11 +319,24 @@ func find_node_in_roots(node: BehNode) -> Array:
 	return find_node_in_tree_list(node, self.roots)
 
 
-func find_node_in_orphans(node: BehNode) -> Array:
+func find_node_in_orphans(node: BehNode, search_roots_only: bool = false) -> Array:
 	"""Searches for the node in the 'orphans' trees. Returns [orphan_idx, parent_node, node] if found.
 	If the node is itself a root orphan, parent_node will be null. Returns [-1, null, null] if not found."""
-	print("[BehTree] (find_node_in_roots) arg node: %s; calling find_node_in_tree_list with self.roots" % node)
-	return find_node_in_tree_list(node, self.orphans)
+	if search_roots_only:
+		print("[BehTree] (find_node_in_orphans) arg node: %s; searching self.orphans roots ONLY" % node)
+		var found_orphan_idx = -1
+		var o = 0
+		var node_to_return = null
+		for orphan_root in self.orphans:
+			if orphan_root == node:
+				node_to_return = orphan_root
+				found_orphan_idx = o
+				break
+			o += 1
+		return [found_orphan_idx, null, node_to_return]
+	else:
+		print("[BehTree] (find_node_in_orphans) arg node: %s; calling find_node_in_tree_list with self.orphans" % node)
+		return find_node_in_tree_list(node, self.orphans)
 
 
 func validate_roots_and_orphans() -> bool:
@@ -253,7 +355,8 @@ func validate_roots_and_orphans() -> bool:
 	for rm in rms: # reverse-index order makes this valid
 		roots.remove_at(rm)
 	for new_orphan in new_orphans:
-		orphans.push_back(new_orphan)
+		_push_orphan(new_orphan)
+#		orphans.push_back(new_orphan)
 	# Orphans -> Roots
 	var new_roots = []
 	rms.clear()
@@ -266,7 +369,8 @@ func validate_roots_and_orphans() -> bool:
 	for rm in rms: # reverse-index order
 		orphans.remove_at(rm)
 	for new_root in new_roots:
-		roots.push_back(new_root)
+#		roots.push_back(new_root)
+		_push_root(new_root)
 	if changed_ct > 0:
 		print("[BehTree] (validate_roots_and_orphans) Counted %s changes between roots & orphans." % changed_ct)
 	var any_changed = changed_ct > 0
@@ -283,7 +387,7 @@ func validate_single_parents() -> bool:
 #	var child = {}
 	
 	var child_parents = {}
-	for child_parent_pair in self.get_all_nodes_with_parents():
+	for child_parent_pair in get_all_nodes_with_parents():
 		var child = child_parent_pair[0]
 		var parent = child_parent_pair[1]
 		if parent != null:
@@ -317,9 +421,20 @@ func validate_single_parents() -> bool:
 
 
 func get_is_orphan(node: BehNode):
-	var is_orphan = orphans.find(node) != -1
+	var is_in_roots = find_node_in_roots(node)[0] != -1
+	var is_in_orphans = find_node_in_orphans(node)[0] != -1
+	if !is_in_roots && !is_in_orphans:
+		push_error("[BehTree] (get_is_orphan) Node is neither in roots nor orphans: %s" % node)
+		return false
+	if is_in_roots && is_in_orphans:
+		push_error("[BehTree] (get_is_orphan) Invalid state: Node is in both roots and orphans: %s" % node)
+		return true
+	if is_in_roots:
+		return false
+	if is_in_orphans:
+		return true
 #	print("[BehTree] is_orphan for node %s ? %s" % [node, is_orphan])
-	return orphans.find(node) != -1
+	return false
 
 
 func get_all_nodes_with_parents() -> Array:

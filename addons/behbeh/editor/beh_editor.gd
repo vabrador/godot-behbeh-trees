@@ -20,6 +20,8 @@ extends Control
 @onready var dbg_active_node_label: Label = $HCtn/SideCtnMargins/SideCtn/DbgActiveNodeLabel
 @onready var dbg_label_root_id: Label = $HCtn/SideCtnMargins/SideCtn/DbgInfoCtn/DbgLabelRootId
 @onready var dbg_label_orphan_ct: Label = $HCtn/SideCtnMargins/SideCtn/DbgInfoCtn/DbgLabelOrphanCount
+@onready var dbg_label_beh_ct: Label = $HCtn/SideCtnMargins/SideCtn/DbgInfoCtn/DbgLabelBehCt
+@onready var dbg_label_generic: Label = $HCtn/SideCtnMargins/SideCtn/DbgInfoCtn/DbgLabelGeneric
 
 
 var editor_plugin: EditorPlugin = null
@@ -40,6 +42,7 @@ var _selected_nodes: Dictionary = {}
 var _copy_nodes_buffer: Array[BehEditorNode] = []
 var _ctx_menu_node_id_pressed_subscribed = false
 var _pending_node_positions = {} # Used to place nodes that don't yet have stable_ids from saving.
+var _pending_parent_child_relations = [] # Used to parent nodes that don't yet have stable_ids from saving.
 
 
 enum ContextMenuType { GraphCtxMenu, NodeCtxMenu }
@@ -125,6 +128,20 @@ func _process(dt):
 			active_tree.set_editor_offset(beh_node, desired_pos)
 		_pending_node_positions.clear()
 		_should_update = true # Re-update to invoke a re-save.
+	# Process _pending_parent_child_relations. This is used to allow parent-child node
+	# pastes to properly allow child nodes to receive stable_ids by first being added as
+	# orphans, then receiving their parent-childing later.
+	if len(_pending_parent_child_relations) > 0:
+		for pair in _pending_parent_child_relations:
+			var parent_beh: BehNode = pair[0]
+			var child_beh: BehNode = pair[1]
+			if !parent_beh.try_add_child(child_beh):
+				push_error("[BehEditor] (update _pending_parent_child_relations) Failed to add pended-child; parent %s -> child %s" % [
+					parent_beh, child_beh])
+			else:
+				pass # No issue.
+		_pending_parent_child_relations.clear()
+		_should_update = true # Re-update to invoke a re-save.
 	
 	# Node Editor view objects
 	# ------------------------
@@ -148,6 +165,7 @@ func _process(dt):
 				var valid_beh = ed_node.validate_beh()
 #				if !valid_beh:
 #					ed_node.set_title_color(BehEditorNode.RED)
+				# Update orphan status for editor nodes.
 				if valid_beh:
 					ed_node.is_orphan = active_tree.get_is_orphan(ed_node.beh)
 				# Children connections.
@@ -168,10 +186,10 @@ func _process(dt):
 					var child_ed_node: BehEditorNode = _editor_node_map[child_id]
 					print("[BehEditor] (BehEditorNode Sync Children) Calling graph.connect_node")
 					var conn_err = graph.connect_node(ed_node.name, 0, child_ed_node.name, 0)
-					print("[BehEditor] (BehEditorNode Sync Children) DONE calling graph.connect_node")
 					if conn_err:
-						print("[BehEditor] (BehEditorNode Sync Children) Error connecting %s -> %s: %s" % [
+						push_error("[BehEditor] (BehEditorNode Sync Children) Error connecting %s -> %s: %s" % [
 							ed_node.name, child_ed_node.name, conn_err])
+					print("[BehEditor] (BehEditorNode Sync Children) DONE calling graph.connect_node")
 #					else:
 #						print("[BehEditor] (BehEditorNode Sync Children) Connected")
 	
@@ -185,8 +203,16 @@ func _process(dt):
 			_selected_nodes.erase(sel_key_name)
 	
 	# Update debug info.
-	dbg_label_root_id.text = "Root Count: %s" % len(active_tree.roots)
-	dbg_label_orphan_ct.text = "Orphan Count: %s" % len(active_tree.orphans)
+	dbg_label_root_id.text = "Root Tree Count: %s" % len(active_tree.roots)
+	dbg_label_orphan_ct.text = "Orphan Tree Count: %s" % len(active_tree.orphans)
+	dbg_label_beh_ct.text = "Total Beh Count: %s" % len(active_tree.get_all_nodes())
+	dbg_label_generic.text = (
+		"Selection Count: %s" +
+		"\nNode Meta Size: %s"
+	) % [
+		len(_selected_nodes),
+		"(tree null)" if active_tree == null else str(len(active_tree.node_meta.keys()))
+	]
 	
 	pass
 
@@ -485,13 +511,13 @@ func subscribe_graph_edit_signals():
 	# Basics
 	graph.popup_request.connect(on_request_ctx_menu)
 	graph.end_node_move.connect(on_graph_end_node_move)
-	graph.connection_request.connect(on_graph_connection_request)
 	# Other Interactions
 	graph.delete_nodes_request.connect(on_delete_nodes_request)
 	graph.node_selected.connect(on_node_selected)
 	graph.node_deselected.connect(on_node_deselected)
 	graph.copy_nodes_request.connect(on_copy_nodes_request)
 	graph.paste_nodes_request.connect(on_paste_nodes_request)
+	graph.connection_request.connect(on_connection_request)
 	graph.disconnection_request.connect(on_disconnection_request)
 
 
@@ -525,6 +551,7 @@ func on_delete_nodes_request(nodes = null):
 				# CHILDREN also have to be stored on a PER-TREE BASIS
 				# SHIT .....................................................
 				# Only OWN NODE data can be stored in a file
+				# NODE RELATIONS must be stored IN THE TREE ONLY
 				# WEIRD ..............................
 				# Ok that's a pending refactor then ....................
 	_should_update = true
@@ -600,7 +627,6 @@ func on_node_selected(node: Node):
 		push_error("[BehEditor] (on_node_selected) _selected_nodes ALREADY contained %s" % node.name)
 		return
 	_selected_nodes[node.name] = true
-	
 	_should_update = true
 
 
@@ -670,9 +696,9 @@ func on_paste_nodes_request(special_copy_buffer = null):
 		_pending_node_positions[dup_beh] = dup_pos
 		if src_beh != null:
 			src_to_dup_map[src_beh] = dup_beh
-	# Recreate children relationships. We do this by
-	# removing the children of a dup_beh (which refer to src_behs) and re-adding them IF they
-	# are present in our map of duplicated BehNodes.
+	# Recreate children relationships.
+	# We do this by removing the children of a dup_beh (which refer to src_behs) and
+	# re-adding them IF they are present in our map of duplicated BehNodes.
 	for src_beh in src_to_dup_map.keys():
 		var dup_beh: BehNode = src_to_dup_map[src_beh]
 		var children_to_remove = []
@@ -683,17 +709,27 @@ func on_paste_nodes_request(special_copy_buffer = null):
 			else:
 				children_to_remove.push_back(src_child)
 		for src_child in children_to_remove:
-			# We set ignore_orphan_update to true because pasting will never cause orphaning.
+			# # # We set ignore_orphan_update to true because pasting will never cause orphaning.
+			# Actually, setting to FALSE to NOT ignore the update to see if adding things as orphans
+			# allows them to be TRACKED, which allows them to SAVE and get stable_ids; then when they
+			# are added later we should be able to remove them as orphans when they are added,
+			# properly.
+			# Wait, no, we DON'T want them to become orphans
 			active_tree.try_remove_parent_child_relationship(dup_beh, src_child, true)
 		for src_child in children_to_replace:
 			active_tree.try_remove_parent_child_relationship(dup_beh, src_child, true)
 		for src_child in children_to_replace:
+			# Instead of immediately adding dup_child as a child relationship,
+			# push it to _pending_parent_child_relations, so that the new children
+			# are tracked directly in the active_tree.orphans array which will get them
+			# a stable_id (via resource_path) when the tree is saved.
 			var dup_child = src_to_dup_map[src_child]
-			if !dup_beh.try_add_child(dup_child):
-				push_error("[BehEditor] (on_paste_nodes_request) Failed to add duplicated child %s to parent %s" % [
-					dup_child, dup_beh])
-			else:
-				pass # No issue.
+			_pending_parent_child_relations.push_back([dup_beh, dup_child])
+#			if !dup_beh.try_add_child(dup_child):
+#				push_error("[BehEditor] (on_paste_nodes_request) Failed to add duplicated child %s to parent %s" % [
+#					dup_child, dup_beh])
+#			else:
+#				pass # No issue.
 	_should_update = true # Will save, assign paths, resubscribe to ed_node signals, etc
 
 
@@ -704,6 +740,41 @@ func on_duplicate_nodes_request():
 	var special_buffer = []
 	on_copy_nodes_request(special_buffer)
 	on_paste_nodes_request(special_buffer)
+
+
+func on_connection_request(from_node: StringName, from_port: int, to_node: StringName, to_port: int):
+	if active_tree == null:
+		print("[BehEditor] (Connection Request) Ignoring on_connection_request as active_tree is null.")
+		return
+	# Debugging, figure out what's being called
+	print(("[BehEditor] (Connection Request) from_node %s port %s -> to_node %s to_port %s") % [
+		from_node, from_port, to_node, to_port])
+	
+	# Validate this connection is theoretically possible.
+	var ed_from = graph.get_node_or_null(NodePath(from_node)) as BehEditorNode
+	var ed_to = graph.get_node_or_null(NodePath(to_node)) as BehEditorNode
+	print("[BehEditor] (Connection Request) found ed_from? %s" % (ed_from != null))
+	print("[BehEditor] (Connection Request) found ed_to?   %s" % (ed_to != null))
+	if ed_from == null || ed_to == null: return
+	if !ed_from.validate_beh():
+		print("[BehEditor] (Connection Request) ed_from had invalidate beh.")
+		return
+	if !ed_to.validate_beh():
+		print("[BehEditor] (Connection Request) ed_to had invalidate beh.")
+		return
+	
+	# Try to add child "from" -> "to"; this might fail.
+	if ed_from.beh.try_add_child(ed_to.beh):
+		print("[BehEditor] (Connection Request) Successfully added a child relationship: %s -> %s" % [
+			ed_from.beh, ed_to.beh])
+		# graph.connect_node() will be called from the update as a part of the node sync
+		# process.
+		_should_update = true
+	else:
+		print("[BehEditor] (Connection Request) FAILED to add a child relationship (may not be an error!): %s -> %s" % [
+			ed_from.beh, ed_to.beh])
+	_should_update = true
+	pass
 
 
 func on_disconnection_request(from_node: StringName, from_port: int, to_node: StringName, to_port: int):
@@ -793,40 +864,6 @@ func get_editor_nodes() -> Array[BehEditorNode]:
 
 func on_graph_end_node_move():
 	_should_update = true # Resave so that we capture new node positions.
-
-
-func on_graph_connection_request(from_node: StringName, from_port: int, to_node: StringName, to_port: int):
-	if active_tree == null:
-		print("[BehEditor] (Connection Request) Ignoring on_graph_connection_request as active_tree is null.")
-		return
-	# Debugging, figure out what's being called
-	print(("[BehEditor] (Connection Request) from_node %s port %s -> to_node %s to_port %s") % [
-		from_node, from_port, to_node, to_port])
-	
-	# Validate this connection is theoretically possible.
-	var ed_from = graph.get_node_or_null(NodePath(from_node)) as BehEditorNode
-	var ed_to = graph.get_node_or_null(NodePath(to_node)) as BehEditorNode
-	print("[BehEditor] (Connection Request) found ed_from? %s" % (ed_from != null))
-	print("[BehEditor] (Connection Request) found ed_to?   %s" % (ed_to != null))
-	if ed_from == null || ed_to == null: return
-	if !ed_from.validate_beh():
-		print("[BehEditor] (Connection Request) ed_from had invalidate beh.")
-		return
-	if !ed_to.validate_beh():
-		print("[BehEditor] (Connection Request) ed_to had invalidate beh.")
-		return
-	
-	# Try to add child "from" -> "to"; this might fail.
-	if ed_from.beh.try_add_child(ed_to.beh):
-		print("[BehEditor] (Connection Request) Successfully added a child relationship: %s -> %s" % [
-			ed_from.beh, ed_to.beh])
-		# graph.connect_node() will be called from the update as a part of the node sync
-		# process.
-		_should_update = true
-
-
-	_should_update = true
-	pass
 
 
 # === View Management ===

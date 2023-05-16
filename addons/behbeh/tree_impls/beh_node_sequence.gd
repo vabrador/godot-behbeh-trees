@@ -3,7 +3,8 @@ class_name BehNodeSequence
 extends BehNode
 
 
-var seq: Array[BehNode] = []
+# Remember to EXPORT any references that are intended for serialization!
+@export var seq: Array[BehNode] = []
 
 
 # === Overrides ===
@@ -18,10 +19,15 @@ func tick(dt: float, bb: Dictionary) -> BehConst.Status:
 
 func clone(deep: bool) -> BehNode:
 	var dup = super.clone(deep) as BehNodeSequence
-	if deep && len(seq) > 0:
-		for src_child in seq:
+	var dup_seq: Array[BehNode] = []
+	if !deep:
+		for src_child in self.seq:
+			dup_seq.push_back(src_child)
+	else: # deep clone
+		for src_child in self.seq:
 			var dup_child = src_child.clone(deep)
-			dup.seq.push_back(dup_child)
+			dup_seq.push_back(dup_child)
+	dup.seq = dup_seq
 	return dup
 
 
@@ -45,11 +51,11 @@ func try_add_child(new_child: BehNode) -> bool:
 func remove_child(child_to_remove: BehNode) -> bool:
 	var found_idx = seq.find(child_to_remove)
 	if found_idx == -1:
-		print("[BehNodeSequence] try_add_child returning false. Not found: %s" % child_to_remove)
+		print("[BehNodeSequence] remove_child returning false. Not found: %s" % child_to_remove)
 		return false
-	child_removed.emit(child_to_remove)
 	seq.remove_at(found_idx)
-	print("[BehNodeSequence] try_add_child successfully removed child %s" % child_to_remove)
+	child_removed.emit(child_to_remove)
+	print("[BehNodeSequence] remove_child successfully removed child %s" % child_to_remove)
 	return true
 
 

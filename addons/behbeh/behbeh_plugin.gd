@@ -3,6 +3,7 @@ extends EditorPlugin
 
 
 var docked_beh_editor: BehTreeEditor = null
+var is_first_edit_focus := false
 #var _edited_obj: BehTree = null
 #var inspector_plugin
 
@@ -12,6 +13,7 @@ func _enter_tree():
 	# https://docs.godotengine.org/en/stable/tutorials/plugins/editor/making_plugins.html#a-custom-dock
 	docked_beh_editor = preload("res://addons/behbeh/editor/beh_editor.tscn").instantiate()
 	docked_beh_editor.editor_plugin = self
+	is_first_edit_focus = true
 	# INSPECTOR
 #	inspector_plugin = preload("res://addons/behbeh/plugin_inspector.gd").instantiate()
 #	add_inspector_plugin(inspector_plugin)
@@ -60,10 +62,14 @@ func _edit(obj: Object):
 	if !(_handles(obj)): to_edit = null
 	# obj may be null; in which case no object to edit, should clean up editing state.
 	docked_beh_editor.notify_edit_target(obj)
-	if docked_beh_editor.active_tree != null:
+	if docked_beh_editor.active_tree != null && !is_first_edit_focus:
 		print("[BehBehPlugin] _edit: taking focus b/c active_tree != null")
 		make_bottom_panel_item_visible(docked_beh_editor)
-#	_edited_obj = obj
+	if is_first_edit_focus:
+		# We skip the first edit focus because it's called when making a new tree
+		# Otherwise the editor takes focus away from the "name the new Resource" save window
+		print("[BehBehPlugin] _edit: HACK: Skipping first edit focus...")
+		is_first_edit_focus = false
 	pass
 
 

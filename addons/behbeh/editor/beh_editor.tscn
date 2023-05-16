@@ -100,6 +100,14 @@ text = "Root Id: (none)"
 layout_mode = 2
 text = "Tracked Orphan Count: (none)"
 
+[node name="DbgLabelBehCt" type="Label" parent="HCtn/SideCtnMargins/SideCtn/DbgInfoCtn"]
+layout_mode = 2
+text = "Total Beh Count: (none)"
+
+[node name="DbgLabelGeneric" type="Label" parent="HCtn/SideCtnMargins/SideCtn/DbgInfoCtn"]
+layout_mode = 2
+text = "Generic Dbg Label"
+
 [node name="TextEdit" type="TextEdit" parent="HCtn/SideCtnMargins/SideCtn/DbgInfoCtn"]
 visible = false
 custom_minimum_size = Vector2(0, 300)
@@ -118,7 +126,6 @@ script = ExtResource("3_wquae")
 
 [node name="ContextPopupMenu" type="PopupMenu" parent="."]
 size = Vector2i(200, 143)
-visible = true
 item_count = 5
 item_0/text = "(ph) node name"
 item_0/id = 0
