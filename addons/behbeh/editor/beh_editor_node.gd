@@ -86,8 +86,8 @@ func update_view():
 		self.add_theme_color_override("title_color", beh.editor_get_color())
 	
 	# Debug label text.
-	dbg_label.text = "name: ...%s\nres_name: ...%s" % [\
-		name.substr(len(String(name)) - 6), self.name.substr(len(String(name)) - 6)]
+	dbg_label.text = "name: ...%s\ninst: ...%s" % [\
+		name.substr(len(String(name)) - 5), str(self.get_instance_id()).substr(len(str(self.get_instance_id())) - 5)]
 	
 	if !validate_beh():
 		render_view_invalid()

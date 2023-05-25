@@ -103,7 +103,51 @@ func editor_get_name() -> String:
 func editor_get_color() -> Color:return Color.ANTIQUE_WHITE
 
 
+# === Built-in Overrides ===
+
+
+func _to_string() -> String:
+	var stable_id = try_get_stable_id()
+	if stable_id == null:
+		var inst_id = self.get_instance_id()
+		var inst_id_str = str(inst_id)
+		return "[BehNode|NoStableId|Inst_..%s]" % inst_id_str.substr(len(inst_id_str) - 5)
+	var stable_id_str = str(stable_id)
+	return "[BehNode|..%s]" % stable_id_str.substr(len(stable_id_str) - 5)
+
+
 # === Utility Funcs ===
+
+
+func has_stable_id() -> bool:
+	var stable_id = try_get_stable_id()
+	if stable_id == null: return false
+	return true
+
+
+func try_get_stable_id() -> Variant:
+	"""Returns null if the operation failed. BehNode must have a resource_path to get a stable ID.
+	Otherwise returns a StringName with the stable ID."""
+	
+	if self.resource_name == null || self.resource_name == "": # Generate stable ID.
+		var new_stab_id = try_generate_stable_id(self)
+		if new_stab_id == null:
+#			push_error("Failed to get stable ID!")
+			return null
+		self.resource_name = new_stab_id
+	return StringName(self.resource_name)
+
+
+static func try_generate_stable_id(beh_node: BehNode) -> Variant:
+	"""Returns null or String. (Null only if failed.)"""
+	var og_path = beh_node.resource_path
+	if og_path == "":
+#		push_error("Can't generate a stable ID for beh_node %s; lacks resource_path" % beh_node.get_instance_id())
+		return null
+	var og_inst_id = beh_node.get_instance_id()
+	var stable_id = "BEHNODE__%s__%s" % [og_path, og_inst_id]
+	print("[BehNode] Node inst %s generated stable id %s" % [beh_node.get_instance_id(), stable_id])
+	return stable_id
 
 
 func get_all_children(include_self: bool = true) -> Array[BehNode]:
@@ -135,29 +179,5 @@ func get_all_children_with_parent(include_self: bool = true) -> Array:
 		for child_child in child_children:
 			to_visit.push_front([child_child, curr_child])
 	return all_pairs
-
-
-func try_get_stable_id() -> Variant:
-	"""Returns null if the operation failed. BehNode must have a resource_path to get a stable ID.
-	Otherwise returns a StringName with the stable ID."""
-	if self.resource_name == null || self.resource_name == "": # Generate stable ID.
-		var new_stab_id = try_generate_stable_id(self)
-		if new_stab_id == null:
-#			push_error("Failed to get stable ID!")
-			return null
-		self.resource_name = new_stab_id
-	return StringName(self.resource_name)
-
-
-static func try_generate_stable_id(beh_node: BehNode) -> Variant:
-	"""Returns null or String. (Null only if failed.)"""
-	var og_path = beh_node.resource_path
-	if og_path == "":
-#		push_error("Can't generate a stable ID for beh_node %s; lacks resource_path" % beh_node.get_instance_id())
-		return null
-	var og_inst_id = beh_node.get_instance_id()
-	var stable_id = "BEHNODE__%s__%s" % [og_path, og_inst_id]
-	print("[BehNode] Node inst %s generated stable id %s" % [beh_node.get_instance_id(), stable_id])
-	return stable_id
 
 

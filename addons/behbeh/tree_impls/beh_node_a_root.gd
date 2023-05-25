@@ -49,8 +49,9 @@ func try_add_child(new_child: BehNode) -> bool:
 func remove_child(child_to_remove: BehNode) -> bool:
 	if child == null: return false # No child to remove.
 	if self.child != child_to_remove: return false # Non-matching child.
+	var removed_child = self.child
 	self.child = null
-	child_removed.emit(self.child)
+	child_removed.emit(removed_child)
 	return true
 
 

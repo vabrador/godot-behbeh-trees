@@ -4,8 +4,7 @@ extends EditorPlugin
 
 var docked_beh_editor: BehTreeEditor = null
 var is_first_edit_focus := false
-#var _edited_obj: BehTree = null
-#var inspector_plugin
+var undo_redo: EditorUndoRedoManager = get_undo_redo()
 
 
 func _enter_tree():
@@ -13,6 +12,7 @@ func _enter_tree():
 	# https://docs.godotengine.org/en/stable/tutorials/plugins/editor/making_plugins.html#a-custom-dock
 	docked_beh_editor = preload("res://addons/behbeh/editor/beh_editor.tscn").instantiate()
 	docked_beh_editor.editor_plugin = self
+	docked_beh_editor.undo_redo = self.undo_redo
 	is_first_edit_focus = true
 	# INSPECTOR
 #	inspector_plugin = preload("res://addons/behbeh/plugin_inspector.gd").instantiate()

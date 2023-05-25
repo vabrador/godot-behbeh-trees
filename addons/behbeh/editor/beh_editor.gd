@@ -3,16 +3,35 @@ class_name BehTreeEditor
 extends Control
 
 
+# === Contents ===
+# - VND Var Node Dependencies
+# - VVD Var Volatile Data
+# - VMD Var Menu Entry Dictionaries
+# - GDE Godot Events
+# - PCM Plugin Comms
+# - CTX Generic Context Menu Request Handler
+# - GCM Graph Context Menu
+# - NCM Node Context Menu
+# - NOP Node Operations
+# - NSE Node Selection
+# - FEA Formal Editor Action Methods
+# - UME Utility Methods
+# - VMN View Management
+
+
+# === VND Var Node Dependencies === 
+
+
 # Buttons
 @onready var graph: BehEditorGraphEdit = $HCtn/GraphEdit
 # Action Panel Controls
 @onready var btn_reset_view_root: Button = $HCtn/SideCtnMargins/SideCtn/ViewActionsCtn/BtnRecenterViewOnRoot
 @onready var btn_open_beh: Button = $HCtn/SideCtnMargins/SideCtn/FileActionsCtn/BtnFileOpen
 # Context Menu(s)
-## GRAPH context menu, for e.g. adding new nodes.
+## GRAPH ctx menu, for e.g. adding new nodes.
 @onready var ctx_menu_graph: PopupPanel = $ContextAddNodePopupPanel
 @onready var ctx_menu_graph_ctn: VBoxContainer = $ContextAddNodePopupPanel/MarginCtn/VBoxCtn
-## NODE context menu, for operations on selected node(s).
+## NODE ctx menu, for operations on selected node(s).
 @onready var ctx_menu_node: PopupMenu = $ContextPopupMenu
 # Side Container
 @onready var side_ctn: VBoxContainer = $HCtn/SideCtnMargins/SideCtn
@@ -24,7 +43,11 @@ extends Control
 @onready var dbg_label_generic: Label = $HCtn/SideCtnMargins/SideCtn/DbgInfoCtn/DbgLabelGeneric
 
 
+# === VVD Var Volatile Data === 
+
+
 var editor_plugin: EditorPlugin = null
+var undo_redo: EditorUndoRedoManager = null # Set by behbeh_plugin on enter_tree.
 var _is_ready: bool = false
 ## Currently-focused BehTree. Null if none is selected or available.
 var active_tree: BehTree = null
@@ -43,6 +66,10 @@ var _copy_nodes_buffer: Array[BehEditorNode] = []
 var _ctx_menu_node_id_pressed_subscribed = false
 var _pending_node_positions = {} # Used to place nodes that don't yet have stable_ids from saving.
 var _pending_parent_child_relations = [] # Used to parent nodes that don't yet have stable_ids from saving.
+var _dict_history_storage: Dictionary = {} # Storage to prevent garbage-collection of objects needed for Undo history.
+
+
+# === VMD Var Menu Entry Dictionaries ===
 
 
 enum ContextMenuType { GraphCtxMenu, NodeCtxMenu }
@@ -57,7 +84,7 @@ var _ctx_menu_node_entries: Array[Dictionary] = [
 var _ctx_menu_node_separators: Array[int] = [ ]
 
 
-# === Godot Events ===
+# === GDE Godot Events ===
 
 
 # Called when the node enters the scene tree for the first time.
@@ -89,6 +116,9 @@ func _process(dt):
 		return
 	
 	print("[BehEditor] Updating.")
+	
+	# Confirm the active_tree is initialized.
+	active_tree.confirm_initialized(true)
 	
 	# Update subscriptions.
 	# -------------
@@ -249,18 +279,18 @@ func create_ed_node_and_update_map(beh: BehNode, id: StringName):
 
 
 func save_active_tree():
-	print("[BehEditor] (Save) Saving...")
+#	print("[BehEditor] (Save) Saving...")
 	if active_tree != null && active_tree.resource_path != "":
 #		print("[BehEditor] Saving active_tree with FLAG_REPLACE_SUBRESOURCE_PATHS...")
 		var error = ResourceSaver.save(active_tree, "", ResourceSaver.FLAG_REPLACE_SUBRESOURCE_PATHS)
-		if error: push_error("[BehEditor] (Save) Error saving active_tree %s: %s" % [active_tree, error])
+		if error: push_error("[BehEditor] (save_active_tree) Error saving active_tree %s: %s" % [active_tree, error])
 #		else: print("[BehEditor] Saved active_tree.")
 		var nodes_ct = 0
 		var nodes_lacking_resource_path_ct = 0
 #		var child_save_ct = 0
 		for child in active_tree.get_all_nodes():
 			if child.resource_path == "":
-				push_warning(("[BehEditor] (Save) Warning: BehNode (%s) lacks resource_path. " + \
+				push_warning(("[BehEditor] (save_active_tree) Warning: BehNode (%s) lacks resource_path. " + \
 				".") % [
 					child.get_instance_id()])
 				nodes_lacking_resource_path_ct += 1
@@ -270,16 +300,21 @@ func save_active_tree():
 #			if error: push_error("[BehEditor] (Save) Error saving child %s: %s" % [child, error])
 #			else: child_save_ct += 1
 		if nodes_lacking_resource_path_ct == 0:
-			print("[BehEditor] (Save) Success. All %s nodes had resource_path." % nodes_ct)
+			print("[BehEditor] (save_active_tree) Saved %s nodes." % nodes_ct)
 			pass
 #		if nodes_ct == child_save_ct:
 #			print("[BehEditor] (Save) Success. All %s children were saved." % child_save_ct)
 #		else:
 #			push_warning("[BehEditor] (Save) Node ct was %s but only saved %s children." % [nodes_ct, child_save_ct])
-	print("[BehEditor] (Save) Finished saving.")
+#	print("[BehEditor] (Save) Finished saving.")
+	if active_tree == null:
+		push_warning("[BehEditor] (save_active_tree) Skipping, as active_tree is null.")
+	if active_tree != null && active_tree.resource_path == null:
+		push_warning("[BehEditor] (save_active_tree) Skipping, active_tree exists but lacks a resource_path.")
+	pass
 
 
-# === Plugin Comms ===
+# === PCM Plugin Comms ===
 
 
 func notify_edit_target(target: Variant):
@@ -308,13 +343,7 @@ func notify_edit_target(target: Variant):
 	_should_update = true
 
 
-# === Context Menu & Add-Node Picker ===
-
-
-func get_graph_local_pos_from_control_pos(control_local_pos: Vector2) -> Vector2:
-	var graph_local_pos_wo_scroll = control_local_pos / graph.zoom
-	var graph_local_pos = graph_local_pos_wo_scroll + graph.scroll_offset / graph.zoom
-	return graph_local_pos
+# === CTX Generic Context Menu Request Handler ===
 
 
 func on_request_ctx_menu(mouse_graph_control_local_pos: Vector2):
@@ -332,7 +361,7 @@ func on_request_ctx_menu(mouse_graph_control_local_pos: Vector2):
 	# graph_context_menu action.
 	#
 	# Right-click any selected node to get the node context menu isntead of the
-	# graph context menu.
+	# graph ctx menu.
 	var clicked_node = null
 	if len(_selected_nodes) > 0:
 		for node_name_key in _selected_nodes:
@@ -362,6 +391,15 @@ func on_request_ctx_menu(mouse_graph_control_local_pos: Vector2):
 	pass
 
 
+func get_graph_local_pos_from_control_pos(control_local_pos: Vector2) -> Vector2:
+	var graph_local_pos_wo_scroll = control_local_pos / graph.zoom
+	var graph_local_pos = graph_local_pos_wo_scroll + graph.scroll_offset / graph.zoom
+	return graph_local_pos
+
+
+# === GCM Graph Context Menu ===
+
+
 func open_graph_ctx_menu(mouse_graph_control_local_pos: Vector2):
 	# Calculate where the click was in the control.
 	var mouse_graph_local_pos = get_graph_local_pos_from_control_pos(mouse_graph_control_local_pos)
@@ -378,6 +416,32 @@ func open_graph_ctx_menu(mouse_graph_control_local_pos: Vector2):
 		beh_node_picker.get_parent().remove_child(beh_node_picker)
 	ctx_menu_graph_ctn.add_child(beh_node_picker)
 	ctx_menu_graph.popup()
+
+
+func init_beh_node_picker() -> EditorResourcePicker:
+	"""ContextMenu -> Add Node. Spawns an EditorResourcePicker intended for the Graph context menu."""
+	if _add_beh_node_picker != null:
+		return _add_beh_node_picker
+	_add_beh_node_picker = EditorResourcePicker.new()
+	_add_beh_node_picker.base_type = "BehNode"
+	_add_beh_node_picker.resource_changed.connect(on_erp_res_changed)
+	return _add_beh_node_picker
+
+
+func on_erp_res_changed(res: Resource):
+	"""Called when the EditorResourcePicker resource changes in the New Node context."""
+	if res == null:
+		print("[BehEditor] Resource selector cleared")
+		return
+#	print("BehEditor: EditorResourePicker Got resource changed signal! path is %s" % res.resource_path)
+	print("[BehEditor] Adding new Orphan node for res instance id %s at pos %s" % [
+		res.get_instance_id(), _new_node_pos])
+	add_new_node(res, _new_node_pos)
+	ctx_menu_graph.hide()
+	_add_beh_node_picker.edited_resource = null # Clear resource
+
+
+# === NCM Node Context Menu ===
 
 
 func open_node_ctx_menu(mouse_graph_control_local_pos: Vector2):
@@ -424,34 +488,13 @@ func on_ctx_menu_node_id_pressed(pressed_id: int):
 	self.call(action_name)
 
 
-func init_beh_node_picker() -> EditorResourcePicker:
-	"""ContextMenu -> Add Node. Spawns an EditorResourcePicker intended for the Graph context menu."""
-	if _add_beh_node_picker != null:
-		return _add_beh_node_picker
-	_add_beh_node_picker = EditorResourcePicker.new()
-	_add_beh_node_picker.base_type = "BehNode"
-	_add_beh_node_picker.resource_changed.connect(on_erp_res_changed)
-	return _add_beh_node_picker
-
-
-func on_erp_res_changed(res: Resource):
-	"""Called when the EditorResourcePicker resource changes in the New Node context."""
-	if res == null:
-		print("[BehEditor] Resource selector cleared")
-		return
-#	print("BehEditor: EditorResourePicker Got resource changed signal! path is %s" % res.resource_path)
-	print("[BehEditor] Adding new Orphan node for res instance id %s at pos %s" % [
-		res.get_instance_id(), _new_node_pos])
-	add_new_node(res, _new_node_pos)
-	ctx_menu_graph.hide()
-	_add_beh_node_picker.edited_resource = null # Clear resource
-
-
-# === Node Operations ===
+# === NOP Node Operations ===
 
 
 func add_new_node(beh_node_inst: BehNode, node_spawn_pos: Vector2):
-	"""Adds a new parent-less node to the active tree. The orphan will become the root of the tree
+	"""NOTE: UNDOABLE USER OPERATIONS REQUIRE THE USE OF undoable_add_nodes() INSTEAD.
+	
+	Adds a new parent-less node to the active tree. The orphan will become the root of the tree
 	and won't be tracked as an orphan if it is the first node to be added to the tree."""
 	if active_tree == null:
 		push_error("[BehEditor] Must have an active tree to add a new orphan node.")
@@ -459,9 +502,62 @@ func add_new_node(beh_node_inst: BehNode, node_spawn_pos: Vector2):
 	active_tree.add_node(beh_node_inst)
 	save_active_tree() # Generates a stable ID for the new node so we can set_editor_offset.
 	active_tree.set_editor_offset(beh_node_inst, node_spawn_pos)
-	print("[BehEditor] Adding node at %s" % node_spawn_pos)
+	print("[BehEditor] Added node %s at %s" % [beh_node_inst, node_spawn_pos])
 	print("[BehEditor] OK, added new orphan node. active_tree orphans count is %s" % len(active_tree.orphans))
 	_should_update = true
+
+
+func try_add_parent_child_relation(desired_parent: BehNode, desired_child: BehNode) -> bool:
+	"""Attempts to create a parent-child relation between the first and second args. May fail."""
+	return desired_parent.try_add_child(desired_child)
+
+
+func try_remove_parent_child_relation(parent: BehNode, child: BehNode) -> bool:
+	"""Attempts to remove a parent-child relation between the first and second args. Returns true on success."""
+	if !parent.remove_child(child):
+		push_error("[BehEditor] (try_remove_parent_child_relation) Failed to remove child %s from parent %s." % [
+			child, parent])
+		return false
+	return true
+
+
+func delete_node(del_node: BehNode):
+	if active_tree == null:
+		push_error("[BehEditor] (delete_node) Active tree is null, can't delete from it.")
+		return
+	if del_node == null:
+		push_error("[BehEditor] (delete_node) Can't delete a null node.")
+		return
+	print("[BehEditor] (delete_node) Removing node %s from the active tree." % del_node)
+	var removed_node = active_tree.remove_node(del_node.beh)
+	if removed_node == null:
+		push_warning("[BehEditor] (delete_node) Failed to remove a node from the active_tree (didn't exist)")
+	else:
+		pass # Don't free() the node, let it be garbage-collected if no other references exist?
+		# Because OTHER trees might have a reference to the node
+		# Except that's not really supposed to be true anymore
+		# Actually wait it can TOTALLY be true if you add it from the file system
+		# That's why you can't store -- shit................................
+		# CHILDREN also have to be stored on a PER-TREE BASIS
+		# SHIT .....................................................
+		# Only OWN NODE data can be stored in a file
+		# NODE RELATIONS must be stored IN THE TREE ONLY
+		# WEIRD ..............................
+		# Ok that's a pending refactor then ....................
+		#
+		# For now ALL NODES MUST BE WITHIN THE TREE; STORING IN FILE SYSTEM IS NOT OK
+	pass
+
+
+func move_node(beh: BehNode, to_pos: Vector2):
+	if beh == null:
+		push_error("[BehEditor] (move_node) Can't move null node.")
+		return
+	if !beh.has_stable_id():
+		push_error("[BehEditor] (move_node) Can't move node instance %s, it lacks a stable id (save the tree first)." % [
+			beh.get_instance_id()])
+		return
+	active_tree.set_editor_offset(beh, to_pos)
 
 
 func try_get_node_from_name(node_name: StringName, silent_on_not_found: bool = false) -> Variant:
@@ -475,7 +571,7 @@ func try_get_node_from_name(node_name: StringName, silent_on_not_found: bool = f
 	return node_as_ed_node
 
 
-# === Node Selection ===
+# === NSE Node Selection ===
 
 
 var _expects_node_target = false
@@ -539,21 +635,7 @@ func on_delete_nodes_request(nodes = null):
 		if del_node.beh == null:
 			push_warning("[BehEditor] (on_delete_nodes_request) Deleted ed_node that had no beh.")
 		else:
-			var removed_node = active_tree.remove_node(del_node.beh)
-			if removed_node == null:
-				push_warning("[BehEditor] Failed to remove a node from the active_tree (didn't exist)")
-			else:
-				pass # Don't free() the node, let it be garbage-collected if no other references exist?
-				# Because OTHER trees might have a reference to the node
-				# Except that's not really supposed to be true anymore
-				# Actually wait it can TOTALLY be true if you add it from the file system
-				# That's why you can't store -- shit................................
-				# CHILDREN also have to be stored on a PER-TREE BASIS
-				# SHIT .....................................................
-				# Only OWN NODE data can be stored in a file
-				# NODE RELATIONS must be stored IN THE TREE ONLY
-				# WEIRD ..............................
-				# Ok that's a pending refactor then ....................
+			delete_node(del_node.beh)
 	_should_update = true
 
 
@@ -605,8 +687,8 @@ func clear_editor_nodes():
 	print("[BehEditor] Clearing editor nodes (unsubscribing first) and map cache for them.")
 	unsubscribe_editor_node_signals()
 	if len(_subscribed_editor_nodes) > 0:
-		push_warning("[BehEditor] Still had %s editor node subscriptions after attempting " +
-			"to unsubscribe from them.", len(_subscribed_editor_nodes))
+		push_warning(("[BehEditor] Still had %s editor node subscriptions after attempting " +
+			"to unsubscribe from them.") % len(_subscribed_editor_nodes))
 		_subscribed_editor_nodes.clear()
 	graph.clear_connections() # Clear connections, prevents errors when freeing GraphNodes
 	for key in _editor_node_map.keys():
@@ -715,8 +797,10 @@ func on_paste_nodes_request(special_copy_buffer = null):
 			# are added later we should be able to remove them as orphans when they are added,
 			# properly.
 			# Wait, no, we DON'T want them to become orphans
+			print("[BehEditor] (on_paste_nodes_request) (children_to_remove) Removing duped-beh -> src_child relationship with skip-orphaning true.")
 			active_tree.try_remove_parent_child_relationship(dup_beh, src_child, true)
 		for src_child in children_to_replace:
+			print("[BehEditor] (on_paste_nodes_request) (children_to_replace) Removing duped-beh -> src_child relationship with skip-orphaning true.")
 			active_tree.try_remove_parent_child_relationship(dup_beh, src_child, true)
 		for src_child in children_to_replace:
 			# Instead of immediately adding dup_child as a child relationship,
@@ -764,7 +848,7 @@ func on_connection_request(from_node: StringName, from_port: int, to_node: Strin
 		return
 	
 	# Try to add child "from" -> "to"; this might fail.
-	if ed_from.beh.try_add_child(ed_to.beh):
+	if try_add_parent_child_relation(ed_from.beh, ed_to.beh):
 		print("[BehEditor] (Connection Request) Successfully added a child relationship: %s -> %s" % [
 			ed_from.beh, ed_to.beh])
 		# graph.connect_node() will be called from the update as a part of the node sync
@@ -796,11 +880,245 @@ func on_disconnection_request(from_node: StringName, from_port: int, to_node: St
 			push_warning("[BehEditor] (on_disconnection_request) Skipping; parent or child beh was null. Parent beh: %s -> Child beh: %s" % [
 				beh_parent, beh_child])
 		# Remove the parent->child relationship.
+		print("[BehEditor] (on_disconnection_request) Calling try_remove_parent_child_relationship because the nodes were disconnected.")
 		if !active_tree.try_remove_parent_child_relationship(beh_parent, beh_child):
 			push_warning("[BehEditor] (on_disconnection_request) Failed to remove parent->child relationship. Parent beh: %s -> Child beh: %s" % [
 				beh_parent, beh_child])
 	# Refresh.
 	_should_update = true
+
+
+
+
+
+
+#func on_editor_node_pos_changed(node_id: StringName):
+#	if !_editor_node_map.has(node_id):
+#		push_warning("[BehEditor] Got on_editor_node_dragged for unknown editor_node id %s" % node_id)
+#		return
+#	var ed_node: BehEditorNode = _editor_node_map[node_id]
+#	if ed_node.beh == null:
+#		push_error("[BehEditor] Node ID %s is missing a backing NodeBeh" % node_id)
+#		return
+#	# Update the position!
+#	active_tree.set_editor_offset(ed_node.beh, ed_node.position_offset)
+##	print("[BehEditor] Successfully set a tree's NodeBeh editor offset via ed_node.position_offset! Value: %s" % [
+##		active_tree.get_editor_offset(ed_node.beh)])
+func on_editor_node_pos_changed():
+	# Argumentless implementation: Update all editor nodes
+	for ed_node in get_editor_nodes():
+		var ed_node_pos = ed_node.position_offset
+		if ed_node.beh != null:
+			active_tree.set_editor_offset(ed_node.beh, ed_node_pos)
+	pass
+
+
+# === FEA Formal Editor Action Methods ===
+#
+# Invoke these methods to perform operations on the tree. Each call constructs Actions in the
+# undo/redo history so that Godot can automatically handle undo & redo calls.
+
+
+func undoable_add_nodes(
+	nodes_to_be_added: Array[BehNode],
+	add_positions: Array[Vector2],
+	parent_child_relations: Array[Array]
+):
+	"""Undoably adds nodes to the active tree."""
+	# Validation.
+	if nodes_to_be_added == null:
+		push_error("[BehEditor] (undoable_add_nodes) Called with null nodes_to_be_added.")
+		return
+	if add_positions == null:
+		push_error("[BehEditor] (undoable_add_nodes) Called with null add_positions.")
+		return
+	if len(nodes_to_be_added) != len(add_positions):
+		push_error("[BehEditor] (undoable_add_nodes) nodes_to_be_added length != add_positions length.")
+		return
+	if parent_child_relations == null:
+		push_error("[BehEditor] (undoable_add_nodes) Called with null parent_child_relations.")
+		return
+	for relation in parent_child_relations:
+		var parent = relation[0]
+		var child = relation[1]
+		if !nodes_to_be_added.any(func(node): return node == parent):
+			push_error("[BehEditor] (undoable_add_nodes) Relation parent %s not present in argument added nodes list.")
+			return
+		if !nodes_to_be_added.any(func(node): return node == child):
+			push_error("[BehEditor] (undoable_add_nodes) Relation child %s not present in argument added nodes list.")
+			return
+	print("[BehEditor] (undoable_add_nodes) Called to add %s nodes with %s inner relations." % [
+		len(nodes_to_be_added), len(parent_child_relations)])
+	
+	# Init the undoable action.
+	undo_redo.create_action("Add %s Nodes", UndoRedo.MERGE_DISABLE, null)
+	
+	# Shallow-copy arrays to be passed to forward ("do") callable.
+	nodes_to_be_added = nodes_to_be_added.duplicate(false)
+	parent_child_relations = parent_child_relations.duplicate(false)
+	# Add forward action.
+	undo_redo.add_do_method(self, "_midaction_add_nodes", nodes_to_be_added, parent_child_relations)
+	# Shallow-copy arrays to be passed to reverse ("undo") callable.
+	nodes_to_be_added = nodes_to_be_added.duplicate(false)
+	parent_child_relations = parent_child_relations.duplicate(false)
+	# Add reverse action.
+	undo_redo.add_undo_method(self, "_midaction_delete_nodes", nodes_to_be_added)
+	
+	# Commit the action. execute passed as true, so the do methods are invoked.
+	undo_redo.commit_action(true)
+
+
+func undoable_delete_nodes(nodes_to_be_deleted: Array[BehNode]):
+	# Validation.
+	if nodes_to_be_deleted == null:
+		push_error("[BehEditor] (undoable_delete_nodes) Called with null nodes_to_be_deleted.")
+		return
+	for del_node in nodes_to_be_deleted:
+		if del_node == null:
+			push_error("[BehEditor] (undoable_delete_nodes) Null entry in nodes_to_be_deleted.")
+			return
+		var has_pos = active_tree.has_editor_offset(del_node)
+		if !has_pos:
+			push_error("[BehEditor] (undoable_delete_nodes) del_node %s lacks pos (needed for undo). Aborting.")
+			return
+	
+	# Init action.
+	undo_redo.create_action("Delete %s Nodes", UndoRedo.MERGE_DISABLE, null)
+	
+	# Action operations.
+	nodes_to_be_deleted = nodes_to_be_deleted.duplicate(false)
+	undo_redo.add_do_method(self, "_midaction_delete_nodes", nodes_to_be_deleted)
+	nodes_to_be_deleted = nodes_to_be_deleted.duplicate(false)
+	var del_positions = []
+	for del_node in nodes_to_be_deleted:
+		var del_pos = active_tree.get_editor_offset(del_node)
+		del_positions.push_back(del_pos)
+	undo_redo.add_undo_method(self, "_midaction_add_nodes", nodes_to_be_deleted, del_positions)
+	
+	# Commit action.
+	undo_redo.commit_action(true)
+
+
+func undoable_add_parent_child_relation(parent: BehNode, child: BehNode):
+	# Validation.
+	if parent == null:
+		push_error("[BehEditor] (undoable_add_parent_child_relation) Called with null parent.")
+		return
+	if child == null:
+		push_error("[BehEditor] (undoable_add_parent_child_relation) Called with null child.")
+		return
+	if active_tree.get_node_parent(child) != null:
+		push_error("[BehEditor] (undoable_add_parent_child_relation) Cannot add parent to child that already has one.")
+		return
+	
+	# Init action.
+	undo_redo.create_action("Set Parent-Child Node Relationship", UndoRedo.MERGE_ALL, null)
+	# Action operations.
+	undo_redo.add_do_method(self, "_midaction_add_parent_child_relation", parent, child)
+	undo_redo.add_undo_method(self, "_midaction_remove_parent_child_relation", parent, child)
+	# Commit action.
+	undo_redo.commit_action(true)
+
+
+func undoable_remove_parent_child_relation(parent: BehNode, child: BehNode):
+	# Validation.
+	if parent == null:
+		push_error("[BehEditor] (undoable_add_parent_child_relation) Called with null parent.")
+		return
+	if child == null:
+		push_error("[BehEditor] (undoable_add_parent_child_relation) Called with null child.")
+		return
+	
+	# TODO: Finish implementing undoable_remove_parent_child_relation here;
+	
+	# Init action.
+	undo_redo.create_action("Remove Parent-Child Node Relationship", UndoRedo.MERGE_ALL, null)
+	# Action operations.
+	undo_redo.add_do_method(self, "_midaction_remove_parent_child_relation", parent, child)
+	# Commit action.
+	pass
+
+
+func undoable_move_node(node_to_be_moved: BehNode, destination_pos_offset: Vector2):
+	# Validation.
+	if node_to_be_moved == null:
+		push_error("[BehEditor] (undoable_delete_nodes) Called with null node_to_be_moved.")
+		return
+	if !node_to_be_moved.has_stable_id():
+		push_error("[BehEditor] (undoable_delete_nodes) node_to_be_moved %s lacks stable_id.")
+		return
+	
+	# Init action.
+	undo_redo.create_action("Move Node", UndoRedo.MERGE_ALL, null)
+	# Action operations.
+	undo_redo.add_do_method(self, "_midaction_move_node", node_to_be_moved, destination_pos_offset)
+	var original_pos_offset = active_tree.get_editor_offset(node_to_be_moved)
+	undo_redo.add_undo_method(self, "_midaction_move_node", node_to_be_moved, original_pos_offset)
+	# Commit action.
+	undo_redo.commit_action(true)
+
+
+# --- Mid-Action Implementation Functions for Formal Editor Action Methods ---
+
+
+func _midaction_add_nodes(nodes_to_be_added: Array[BehNode], add_positions: Array[Vector2], parent_child_relations: Array[Array]):
+	var added_nodes = nodes_to_be_added
+	# Add the nodes.
+	for n in range(len(added_nodes)):
+		var add_node = added_nodes[n]
+		if add_node == null: continue
+		var add_pos = add_positions[n]
+		_midaction_add_node(add_node, add_pos)
+	# Create relationships between the nodes.
+	for parent_child_relation in parent_child_relations:
+		var parent = parent_child_relation[0]
+		var child = parent_child_relation[1]
+		_midaction_add_parent_child_relation(parent, child)
+
+
+func _midaction_add_node(beh: BehNode, pos: Vector2):
+	print("[BehEditor] (_midaction_add_node) Called.")
+	add_new_node(beh, pos)
+
+
+func _midaction_add_parent_child_relation(parent: BehNode, child: BehNode):
+	print("[BehEditor] (_midaction_add_parent_child_relation) Called.")
+	var success = try_add_parent_child_relation(parent, child)
+	if !success:
+		push_error("[BehEditor] (_midaction_add_parent_child_relation) Failed to create a parent->child relation for %s -> %s." % [
+			parent, child])
+		return
+	pass
+
+
+func _midaction_remove_parent_child_relation(parent: BehNode, child: BehNode):
+	print("[BehEditor] (_midaction_remove_parent_child_relation) Called.")
+	var success = try_remove_parent_child_relation(parent, child)
+	if !success:
+		push_error("[BehEditor] (_midaction_remove_parent_child_relation) Failed to remove a parent->child relation for %s -> %s." % [
+			parent, child])
+		return
+	pass
+
+
+func _midaction_delete_nodes(nodes_to_be_deleted: Array[BehNode]):
+	var del_nodes = nodes_to_be_deleted
+	for del_node in del_nodes:
+		_midaction_delete_node(del_node)
+	pass
+
+
+func _midaction_delete_node(beh: BehNode):
+	print("[BehEditor] (_midaction_delete_node) Called.")
+	delete_node(beh)
+
+
+func _midaction_move_node(beh: BehNode, to_pos: Vector2):
+	print("[BehEditor] (_midaction_move_node) Called.")
+	move_node(beh, to_pos)
+
+
+# === UME Utility Methods ===
 
 
 func subscribe_editor_node_signals():
@@ -831,27 +1149,6 @@ func unsubscribe_editor_node_signals():
 			_subscribed_editor_nodes.erase(id)
 
 
-#func on_editor_node_pos_changed(node_id: StringName):
-#	if !_editor_node_map.has(node_id):
-#		push_warning("[BehEditor] Got on_editor_node_dragged for unknown editor_node id %s" % node_id)
-#		return
-#	var ed_node: BehEditorNode = _editor_node_map[node_id]
-#	if ed_node.beh == null:
-#		push_error("[BehEditor] Node ID %s is missing a backing NodeBeh" % node_id)
-#		return
-#	# Update the position!
-#	active_tree.set_editor_offset(ed_node.beh, ed_node.position_offset)
-##	print("[BehEditor] Successfully set a tree's NodeBeh editor offset via ed_node.position_offset! Value: %s" % [
-##		active_tree.get_editor_offset(ed_node.beh)])
-func on_editor_node_pos_changed():
-	# Argumentless implementation: Update all editor nodes
-	for ed_node in get_editor_nodes():
-		var ed_node_pos = ed_node.position_offset
-		if ed_node.beh != null:
-			active_tree.set_editor_offset(ed_node.beh, ed_node_pos)
-	pass
-
-
 func get_editor_nodes() -> Array[BehEditorNode]:
 	var arr: Array[BehEditorNode] = []
 	for child in graph.get_children():
@@ -866,7 +1163,7 @@ func on_graph_end_node_move():
 	_should_update = true # Resave so that we capture new node positions.
 
 
-# === View Management ===
+# === VMN View Management ===
 
 
 func get_view_center_offset() -> Vector2:

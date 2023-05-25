@@ -13,10 +13,6 @@ const EDITOR_OFFSET_KEY: String = "ed_offset"
 ## simultaneously.
 @export var roots: Array[BehNode] = []
 
-## Key: BehNode stable_id. Node metadata for in-tree or orphaned BehNodes.
-## This includes "ed_offset", which tracks the node's in-editor tree position, if it exists.
-@export var node_meta: Dictionary = {}
-
 ## Parent-less nodes that are NOT roots that were added to this tree at some point. Usually used
 ## the authoring process, for newly-created nodes prior to formalizing them with
 ## a parent connection, or for nodes who were children of a recently-deleted node.
@@ -25,17 +21,39 @@ const EDITOR_OFFSET_KEY: String = "ed_offset"
 ## as they are already referenced via parent -> children.
 @export var orphans: Array[BehNode] = []
 
+## Key: BehNode stable_id. Node metadata for in-tree or orphaned BehNodes.
+## This includes "ed_offset", which tracks the node's in-editor tree position, if it exists.
+@export var node_meta: Dictionary = {}
+
 
 var _subscribed_nodes: Dictionary = {}
 var _ignore_next_orphan_operation: BehNode = null # Set to a BehNode to ignore that node's orphaning once.
+var _initialized := false
 
 
 signal tree_changed()
 
 
-func _ready():
-	print("[BehTree] _ready called")
-	for node in get_all_nodes(): subscribe_node_signals(node)
+#func _ready():
+#	print("[BehTree] _ready called")
+#	for node in get_all_nodes(): subscribe_node_signals(node)
+
+
+func initialize():
+	if _initialized:
+		return
+	var all_nodes = get_all_nodes()
+	print("[BehTree] initialize called; subscribing to %s known nodes." % len(all_nodes))
+	for node in all_nodes: subscribe_node_signals(node)
+	_initialized = true
+
+
+func confirm_initialized(silent: bool = false) -> bool:
+	if !_initialized:
+		if !silent: push_warning("[BehTree] Not initialized! Please call initialize() before calling other operations.")
+		initialize()
+		return true
+	return true
 
 
 func subscribe_node_signals(beh: BehNode):
@@ -47,6 +65,7 @@ func subscribe_node_signals(beh: BehNode):
 
 
 func on_child_added(par_beh: BehNode, child_beh: BehNode):
+	confirm_initialized()
 	print("[BehTree] (on_child_added) Signal: child_added: %s -> %s" % [par_beh, child_beh])
 	# New child loses root-orphan status (tree no longer needs to track it).
 	var found_in_root_orphans = find_node_in_orphans(child_beh, true)
@@ -67,6 +86,7 @@ func on_child_added(par_beh: BehNode, child_beh: BehNode):
 
 
 func on_child_removed(par_beh: BehNode, child_beh: BehNode):
+	confirm_initialized()
 	print("[BehTree] (on_child_removed) Signal: child_removed: %s -> %s" % [par_beh, child_beh])
 	var will_ignore_orphaning = false
 	if _ignore_next_orphan_operation != null:
@@ -113,6 +133,7 @@ func has_orphans() -> bool:
 
 func add_node(node: BehNode):
 	"""Adds a new node. If the node is a root, it's added to the roots list."""
+	confirm_initialized()
 	print("[BehTree] Got add_node: %s" % node)
 	if node.get_is_root():
 		_push_root(node)
@@ -148,11 +169,12 @@ func _push_orphan(node: BehNode):
 func remove_node(node: BehNode) -> BehNode:
 	"""Removes a node from the tree. If the BehNode was found and removed, it is returned;
 	otherwise if the BehNode was not found in the tree, this func returns null."""
+	confirm_initialized()
 	var del_node = null
 	
 	var found_in_roots = find_node_in_roots(node)
 	if found_in_roots[0] != -1:
-		# Remove from tree. This will create orphans in if the node has children.
+		# Remove from tree. This will create orphans if the node has children.
 		var root_idx = found_in_roots[0]
 		var node_parent = found_in_roots[1]
 		var found_node = found_in_roots[2]
@@ -215,8 +237,11 @@ static func _inner_remove_node_from_tree(
 	
 	# The node's children are now root orphans.
 	print("[BehTree] (_inner_remove_node_from_tree) Removing children of del-node if any ...")
-	var children = found_node.get_children()
-	for child in children:
+	var children_copy = found_node.get_children().duplicate(false)
+	# Subtle: We COPY the children list so we don't modify-while-iterating.
+	print("[BehTree] (_inner_remove_node_from_tree) Node had %s children ..." % len(children_copy))
+	for child in children_copy:
+		print("[BehTree] (_inner_remove_node_from_tree) Removing child %s ..." % child)
 		if !found_node.remove_child(child):
 			push_warning("[BehTree] (_inner_remove_node_from_tree) Node %s reported failed to remove child %s (child did not exist)" % [found_node, child])
 		# Child is now an orphan. No need to orphan here; signal for removing children will take care of this!
@@ -236,6 +261,7 @@ func try_remove_parent_child_relationship(
 	You do NOT need to call this if trying to remove a node from the tree. Just call remove_node
 	for that and it will handle removing relationships and handling orphaning itself. Call this
 	if you are removing a parent-child relationship but not otherwise modifying the tree structure."""
+	confirm_initialized()
 	print("[BehTree] (try_remove_parent_child_relationship) Wants to remove %s -> child %s" % [
 		parent, child])
 	var child_to_orphan = null
@@ -342,6 +368,7 @@ func find_node_in_orphans(node: BehNode, search_roots_only: bool = false) -> Arr
 func validate_roots_and_orphans() -> bool:
 	"""Confirms that orphans are not roots and roots are not orphans. If this validation
 	caused the tree to change its state, returns true."""
+	confirm_initialized()
 	var changed_ct = 0
 	# Roots -> Orphans
 	var new_orphans = []
@@ -381,6 +408,7 @@ func validate_single_parents() -> bool:
 	"""Confirms that every child has a single parent. If more than one parent is detected for a child,
 	a warning is pushed and the relationship is fixed (only the first detected parent retains
 	parenthood for a given child, and returns true. Returns false if no change was necessary."""
+	confirm_initialized()
 	var changes = []
 #	var parent = {}
 #	var addl_parents = []
@@ -407,7 +435,9 @@ func validate_single_parents() -> bool:
 					"child": child,
 				})
 	# Process any changes.
+	print("[BehTree] (validate_single_parents) Processing remove_parent_child for %s desired changes" % len(changes))
 	for change in changes:
+		print("[BehTree] (validate_single_parents) Processing change: %s" % change.msg)
 		if !try_remove_parent_child_relationship(change.parent, change.child, true):
 			push_error("[BehTree] (validate_single_parents)  Failed to remove parent-child relationship: parent %s -> child %s" % [
 				change.parent, change.child])
