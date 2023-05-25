@@ -497,6 +497,37 @@ func get_all_nodes() -> Array[BehNode]:
 	return arr
 
 
+func contains(beh: BehNode) -> bool:
+	"""Returns whether this tree tracks the argument node."""
+	if beh == null: return false
+	var all_nodes = get_all_nodes()
+	for node in all_nodes:
+		if beh == node: return true
+	return false
+
+
+func get_node_parent(beh: BehNode) -> Variant:
+	"""Returns the BehNode parent of the argument BehNode or null if the node has
+	no parent (is a root or a root orphan). Also returns null if the argument node is not
+	tracked by this tree."""
+	print("[BehTree] (get_node_parent) Called for beh %s." % beh)
+	var root_found = find_node_in_roots(beh)
+	if root_found[0] != -1:
+		return root_found[1]
+	var orphan_found = find_node_in_orphans(beh)
+	if orphan_found[0] != -1:
+		return orphan_found[1]
+	return null
+
+
+func has_parent_child_relation(parent: BehNode, child: BehNode) -> bool:
+	"""Returns whether the argument parent is the parent of the argument child in this tree."""
+	var child_parent = get_node_parent(child)
+	if child_parent == null: return false
+	if child_parent == parent: return true
+	return false
+
+
 func has_editor_offset(beh_node: BehNode) -> bool:
 	var id = beh_node.try_get_stable_id()
 	if id == null:
@@ -526,6 +557,15 @@ func get_editor_offset(beh_node: BehNode) -> Vector2:
 	if node_meta[id][EDITOR_OFFSET_KEY] == BehConst.UNSET_VEC:
 		return Vector2.ZERO
 	return node_meta[id][EDITOR_OFFSET_KEY]
+
+
+func get_editor_offset_or(beh_node: BehNode, or_pos: Vector2) -> Vector2:
+	var id = beh_node.try_get_stable_id()
+	if id == null:
+		return or_pos
+	if !has_editor_offset(beh_node):
+		return or_pos
+	return get_editor_offset(beh_node)
 
 
 func set_editor_offset(beh_node: BehNode, pos: Vector2):
