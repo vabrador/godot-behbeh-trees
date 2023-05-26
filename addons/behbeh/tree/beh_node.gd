@@ -3,6 +3,9 @@ class_name BehNode
 extends Resource
 
 
+static func dprint(s: String): BehTreeEditor.dprint(s)
+
+
 ## The base class for all BehTree behavior nodes. Counter-intuitively, it's a Resource
 ## instead of a Node.
 ##
@@ -28,7 +31,7 @@ signal child_removed(former_child: BehNode)
 
 func tick(dt: float, bb: Dictionary) -> BehConst.Status:
 	"""Main tick function for BehNodes. Overwrite this to implement a new BehNode."""
-	return BehConst.Status.Success
+	return BehConst.Status.Resolved
 
 
 func clone(also_clone_children: bool) -> BehNode:
@@ -41,7 +44,7 @@ func clone(also_clone_children: bool) -> BehNode:
 	as true so that the tree can be easily duplicated for e.g. duplicate actors.
 	
 	Call super.clone() in implementations because it has logic related to stable_id generation."""
-	print("[BehNode] clone(): OG stable id (res name) was: %s" % self.resource_name)
+	dprint("[BehNode] clone(): OG stable id (res name) was: %s" % self.resource_name)
 	var duplicated: BehNode = self.duplicate(false) as BehNode
 	duplicated.resource_path = ""
 	duplicated.resource_name = ""
@@ -58,9 +61,9 @@ func get_is_root() -> bool:
 func get_children() -> Array[BehNode]:
 	"""If this BehNode executes other BehNode that it owns, return those BehNodes here."""
 	# TODO: Refactor to get_children overrides
-	if self is BehNodeSequence:
+	if self is BehNodeASequence:
 		return self.seq as Array[BehNode]
-	if self is BehNodeSet:
+	if self is BehNodeASet:
 		return self.set_behs as Array[BehNode]
 	var empty_arr: Array[BehNode] = []
 	return empty_arr
@@ -97,10 +100,13 @@ func remove_child(child_to_remove: BehNode) -> bool:
 
 func editor_get_name() -> String:
 	if self.script == null: return "Unknown Node"
-	return BehUtils.get_best_guess_script_class_name(self.script)
+	var best_guess = BehUtils.get_best_guess_script_class_name(self.script)
+	if best_guess == "BehNode":
+		return "BehNode (No-Op)"
+	return best_guess
 
 
-func editor_get_color() -> Color:return Color.ANTIQUE_WHITE
+func editor_get_color() -> Color: return Color.ANTIQUE_WHITE
 
 
 # === Built-in Overrides ===
@@ -146,7 +152,7 @@ static func try_generate_stable_id(beh_node: BehNode) -> Variant:
 		return null
 	var og_inst_id = beh_node.get_instance_id()
 	var stable_id = "BEHNODE__%s__%s" % [og_path, og_inst_id]
-	print("[BehNode] Node inst %s generated stable id %s" % [beh_node.get_instance_id(), stable_id])
+	dprint("[BehNode] Node inst %s generated stable id %s" % [beh_node.get_instance_id(), stable_id])
 	return stable_id
 
 

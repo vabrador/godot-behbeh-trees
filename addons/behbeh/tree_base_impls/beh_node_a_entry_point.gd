@@ -1,9 +1,16 @@
 @tool
-class_name BehNodeARoot
+class_name BehNodeAEntryPoint
 extends BehNode
 
 
 @export var child: BehNode = null
+
+
+# === Editor Overrides ===
+
+
+func editor_get_name() -> String: return "Entry Point"
+func editor_get_color() -> Color: return Color.MEDIUM_SPRING_GREEN
 
 
 # === Overrides ===
@@ -11,7 +18,7 @@ extends BehNode
 
 func tick(dt: float, bb: Dictionary) -> BehConst.Status:
 	if child == null:
-		return BehConst.Status.Success
+		return BehConst.Status.Resolved
 	return child.tick(dt, bb)
 
 
@@ -53,12 +60,5 @@ func remove_child(child_to_remove: BehNode) -> bool:
 	self.child = null
 	child_removed.emit(removed_child)
 	return true
-
-
-# === Editor Overrides ===
-
-
-func editor_get_name() -> String: return "Root Entry Point"
-func editor_get_color() -> Color: return Color.MEDIUM_SPRING_GREEN
 
 

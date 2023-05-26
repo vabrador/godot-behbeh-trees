@@ -1,0 +1,67 @@
+[gd_resource type="Resource" script_class="BehTree" load_steps=13 format=3 uid="uid://dbn41khud1djf"]
+
+[ext_resource type="Script" path="res://addons/behbeh/tree_base_impls/beh_node_a_sequence.gd" id="1_72e1s"]
+[ext_resource type="Script" path="res://addons/behbeh/tree_builtin_impls/beh_node_b_debug_print.gd" id="1_86x2b"]
+[ext_resource type="Script" path="res://addons/behbeh/tree/beh_tree.gd" id="1_yubw6"]
+[ext_resource type="Script" path="res://addons/behbeh/tree_base_impls/beh_node_a_set.gd" id="2_5hf2y"]
+[ext_resource type="Script" path="res://addons/behbeh/tree_base_impls/beh_node_a_entry_point.gd" id="2_8lsyk"]
+
+[sub_resource type="Resource" id="Resource_8ayyv"]
+resource_name = "BEHNODE__res://nione.tres::Resource_8ayyv__-9223367147554543253"
+script = ExtResource("1_86x2b")
+
+[sub_resource type="Resource" id="Resource_0ui50"]
+resource_name = "BEHNODE__res://nione.tres::Resource_0ui50__-9223368277181266156"
+script = ExtResource("2_5hf2y")
+children = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([SubResource("Resource_8ayyv")])
+
+[sub_resource type="Resource" id="Resource_uqpyc"]
+resource_name = "BEHNODE__res://nione.tres::Resource_uqpyc__-9223366985906058268"
+script = ExtResource("1_86x2b")
+
+[sub_resource type="Resource" id="Resource_ra4s3"]
+resource_name = "BEHNODE__res://nione.tres::Resource_ra4s3__-9223367979251463006"
+script = ExtResource("1_86x2b")
+
+[sub_resource type="Resource" id="Resource_yonre"]
+resource_name = "BEHNODE__res://nione.tres::Resource_yonre__-9223369776376517967"
+script = ExtResource("2_5hf2y")
+children = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([SubResource("Resource_uqpyc"), SubResource("Resource_ra4s3")])
+
+[sub_resource type="Resource" id="Resource_uwwl1"]
+resource_name = "BEHNODE__res://nione.tres::Resource_uwwl1__-9223369892424520906"
+script = ExtResource("1_72e1s")
+children = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([SubResource("Resource_0ui50"), SubResource("Resource_yonre")])
+
+[sub_resource type="Resource" id="Resource_3ndsk"]
+resource_name = "BEHNODE__res://nione.tres::Resource_3ndsk__-9223367974436396035"
+script = ExtResource("2_8lsyk")
+child = SubResource("Resource_uwwl1")
+
+[resource]
+script = ExtResource("1_yubw6")
+roots = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([SubResource("Resource_3ndsk")])
+orphans = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([])
+node_meta = {
+"BEHNODE__res://nione.tres::Resource_0ui50__-9223368277181266156": {
+"ed_offset": Vector2(540, 140)
+},
+"BEHNODE__res://nione.tres::Resource_3ndsk__-9223367974436396035": {
+"ed_offset": Vector2(140, 40)
+},
+"BEHNODE__res://nione.tres::Resource_8ayyv__-9223367147554543253": {
+"ed_offset": Vector2(800, 140)
+},
+"BEHNODE__res://nione.tres::Resource_ra4s3__-9223367979251463006": {
+"ed_offset": Vector2(800, -140)
+},
+"BEHNODE__res://nione.tres::Resource_uqpyc__-9223366985906058268": {
+"ed_offset": Vector2(800, -20)
+},
+"BEHNODE__res://nione.tres::Resource_uwwl1__-9223369892424520906": {
+"ed_offset": Vector2(320, 40)
+},
+"BEHNODE__res://nione.tres::Resource_yonre__-9223369776376517967": {
+"ed_offset": Vector2(540, -80)
+}
+}

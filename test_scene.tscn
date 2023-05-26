@@ -1,0 +1,10 @@
+[gd_scene load_steps=3 format=3 uid="uid://b06ucci8r4i4a"]
+
+[ext_resource type="Script" path="res://test_tree_user.gd" id="1_eubli"]
+[ext_resource type="Resource" uid="uid://dbn41khud1djf" path="res://nione.tres" id="2_6t5t3"]
+
+[node name="test_scene" type="Node2D"]
+
+[node name="TestTreeUser" type="Node" parent="."]
+script = ExtResource("1_eubli")
+beh_tree = ExtResource("2_6t5t3")
