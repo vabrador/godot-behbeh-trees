@@ -16,7 +16,7 @@ var idx := -1
 var next_idx := -1
 
 
-static func dprint(s: String): BehTreeEditor.dprint(s)
+static func dprintd(s: String): BehTreeEditor.dprintd(s)
 
 
 # === Editor Overrides ===
@@ -51,6 +51,9 @@ func get_is_root() -> bool: return false
 
 
 func get_children() -> Array[BehNode]:
+	"""Note: It's actually IMPORTANT that this IS the backing array of children for the node! Because
+	the return value is sometimes sorted by the BehTreeEditor, so that children are iterated according
+	to their visual order (top to bottom, left to right)."""
 	return children
 
 
@@ -59,7 +62,7 @@ func get_can_add_child() -> bool: return true
 
 func try_add_child(new_child: BehNode) -> bool:
 	children.push_back(new_child)
-	dprint("[%s] try_add_child successfully added a child %s" % [self, new_child])
+	dprintd("[%s] try_add_child successfully added a child %s" % [self, new_child])
 	child_added.emit(new_child)
 	return true
 
@@ -67,11 +70,11 @@ func try_add_child(new_child: BehNode) -> bool:
 func remove_child(child_to_remove: BehNode) -> bool:
 	var found_idx = children.find(child_to_remove)
 	if found_idx == -1:
-		dprint("[%s] remove_child returning false. Not found: %s" % [self, child_to_remove])
+		dprintd("[%s] remove_child returning false. Not found: %s" % [self, child_to_remove])
 		return false
 	children.remove_at(found_idx)
 	child_removed.emit(child_to_remove)
-	dprint("[%s] remove_child successfully removed child %s" % [self, child_to_remove])
+	dprintd("[%s] remove_child successfully removed child %s" % [self, child_to_remove])
 	return true
 
 

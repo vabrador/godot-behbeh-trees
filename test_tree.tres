@@ -1,0 +1,70 @@
+[gd_resource type="Resource" script_class="BehTree" load_steps=13 format=3 uid="uid://clfcy21wfs6gx"]
+
+[ext_resource type="Script" path="res://addons/behbeh/tree_builtin_impls/beh_node_b_debug_print.gd" id="1_hue68"]
+[ext_resource type="Script" path="res://addons/behbeh/tree_base_impls/beh_node_a_set.gd" id="1_kisor"]
+[ext_resource type="Script" path="res://addons/behbeh/tree_base_impls/beh_node_a_sequence.gd" id="1_m26o8"]
+[ext_resource type="Script" path="res://addons/behbeh/tree_base_impls/beh_node_a_entry_point.gd" id="1_u8v5u"]
+[ext_resource type="Script" path="res://addons/behbeh/tree/beh_tree.gd" id="2_6xh17"]
+
+[sub_resource type="Resource" id="Resource_xxj01"]
+resource_name = "BEHNODE__res://test_tree.tres::Resource_xxj01__-9223368342947943142"
+script = ExtResource("1_hue68")
+msg = "Hello, world! 2"
+
+[sub_resource type="Resource" id="Resource_cpngw"]
+resource_name = "BEHNODE__res://test_tree.tres::Resource_cpngw__-9223368295552307193"
+script = ExtResource("1_hue68")
+msg = "Hello, world! 1"
+
+[sub_resource type="Resource" id="Resource_lhqca"]
+resource_name = "BEHNODE__res://test_tree.tres::Resource_lhqca__-9223369599192340525"
+script = ExtResource("1_kisor")
+children = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([SubResource("Resource_xxj01"), SubResource("Resource_cpngw")])
+
+[sub_resource type="Resource" id="Resource_2wqqi"]
+resource_name = "BEHNODE__res://test_tree.tres::Resource_2wqqi__-9223366306999196255"
+script = ExtResource("1_hue68")
+msg = "Hello, world! 3"
+
+[sub_resource type="Resource" id="Resource_snmw8"]
+resource_name = "BEHNODE__res://test_tree.tres::Resource_snmw8__-9223369565604354424"
+script = ExtResource("1_kisor")
+children = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([SubResource("Resource_2wqqi")])
+
+[sub_resource type="Resource" id="Resource_1viod"]
+resource_name = "BEHNODE__res://test_tree.tres::Resource_1viod__-9223369643198978429"
+script = ExtResource("1_m26o8")
+children = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([SubResource("Resource_lhqca"), SubResource("Resource_snmw8")])
+
+[sub_resource type="Resource" id="Resource_q7kem"]
+resource_name = "BEHNODE__res://test_tree.tres::Resource_q7kem__-9223369730625050487"
+script = ExtResource("1_u8v5u")
+child = SubResource("Resource_1viod")
+
+[resource]
+script = ExtResource("2_6xh17")
+roots = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([SubResource("Resource_q7kem")])
+orphans = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([])
+node_meta = {
+"BEHNODE__res://test_tree.tres::Resource_1viod__-9223369643198978429": {
+"ed_offset": Vector2(300, -20)
+},
+"BEHNODE__res://test_tree.tres::Resource_2wqqi__-9223366306999196255": {
+"ed_offset": Vector2(700, 100)
+},
+"BEHNODE__res://test_tree.tres::Resource_cpngw__-9223368295552307193": {
+"ed_offset": Vector2(700, -40)
+},
+"BEHNODE__res://test_tree.tres::Resource_lhqca__-9223369599192340525": {
+"ed_offset": Vector2(480, -80)
+},
+"BEHNODE__res://test_tree.tres::Resource_q7kem__-9223369730625050487": {
+"ed_offset": Vector2(140, -20)
+},
+"BEHNODE__res://test_tree.tres::Resource_snmw8__-9223369565604354424": {
+"ed_offset": Vector2(480, 40)
+},
+"BEHNODE__res://test_tree.tres::Resource_xxj01__-9223368342947943142": {
+"ed_offset": Vector2(700, -140)
+}
+}

@@ -3,7 +3,7 @@ class_name BehNode
 extends Resource
 
 
-static func dprint(s: String): BehTreeEditor.dprint(s)
+static func dprintd(s: String): BehTreeEditor.dprintd(s)
 
 
 ## The base class for all BehTree behavior nodes. Counter-intuitively, it's a Resource
@@ -44,7 +44,7 @@ func clone(also_clone_children: bool) -> BehNode:
 	as true so that the tree can be easily duplicated for e.g. duplicate actors.
 	
 	Call super.clone() in implementations because it has logic related to stable_id generation."""
-	dprint("[BehNode] clone(): OG stable id (res name) was: %s" % self.resource_name)
+	dprintd("[BehNode] clone(): OG stable id (res name) was: %s" % self.resource_name)
 	var duplicated: BehNode = self.duplicate(false) as BehNode
 	duplicated.resource_path = ""
 	duplicated.resource_name = ""
@@ -59,7 +59,10 @@ func get_is_root() -> bool:
 
 
 func get_children() -> Array[BehNode]:
-	"""If this BehNode executes other BehNode that it owns, return those BehNodes here."""
+	"""If this BehNode executes other BehNode that it owns, return those BehNodes here.
+	It's actually IMPORTANT that this IS the backing array of children for the node! Because
+	the return value is sometimes sorted by the BehTreeEditor, so that children are iterated
+	according to their visual order (top to bottom, left to right)."""
 	# TODO: Refactor to get_children overrides
 	if self is BehNodeASequence:
 		return self.seq as Array[BehNode]
@@ -109,6 +112,9 @@ func editor_get_name() -> String:
 func editor_get_color() -> Color: return Color.ANTIQUE_WHITE
 
 
+func editor_get_body_text() -> String: return ""
+
+
 # === Built-in Overrides ===
 
 
@@ -152,7 +158,7 @@ static func try_generate_stable_id(beh_node: BehNode) -> Variant:
 		return null
 	var og_inst_id = beh_node.get_instance_id()
 	var stable_id = "BEHNODE__%s__%s" % [og_path, og_inst_id]
-	dprint("[BehNode] Node inst %s generated stable id %s" % [beh_node.get_instance_id(), stable_id])
+	dprintd("[BehNode] Node inst %s generated stable id %s" % [beh_node.get_instance_id(), stable_id])
 	return stable_id
 
 
@@ -164,9 +170,9 @@ func get_all_children(include_self: bool = true) -> Array[BehNode]:
 	while len(to_visit) > 0:
 		var next = to_visit.pop_front()
 		all_children.push_back(next)
-		var children = next.get_children()
-		children.reverse()
-		for child in children:
+		var children_copy = next.get_children().duplicate()
+		children_copy.reverse() # Be careful NOT to reverse the original child array!
+		for child in children_copy:
 			to_visit.push_front(child)
 	return all_children
 
@@ -180,9 +186,9 @@ func get_all_children_with_parent(include_self: bool = true) -> Array:
 		all_pairs.push_back(curr_pair)
 		var curr_child = curr_pair[0]
 #		var curr_parent = curr_pair[1]
-		var child_children = curr_child.get_children()
-		child_children.reverse()
-		for child_child in child_children:
+		var child_children_copy = curr_child.get_children().duplicate()
+		child_children_copy.reverse() # Be careful NOT to reverse the original child array!
+		for child_child in child_children_copy:
 			to_visit.push_front([child_child, curr_child])
 	return all_pairs
 

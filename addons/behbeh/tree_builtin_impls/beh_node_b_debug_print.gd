@@ -3,17 +3,21 @@ class_name BehNodeBDebugPrint
 extends BehNode
 
 
+@export var msg: String = "Hello, world!"
+
+
 # === Editor Overrides ===
 
 
 func editor_get_name() -> String: return "Debug: Print"
 func editor_get_color() -> Color: return Color.PLUM
+func editor_get_body_text() -> String: return msg
 
 
 # === Overrides ===
 
 
 func tick(_dt: float, _bb: Dictionary) -> BehConst.Status:
-	print("[BehNodeBDebugPrint] Hello, world! This node is: %s" % self.resource_name)
+	print(msg)
 	return BehConst.Status.Resolved
 

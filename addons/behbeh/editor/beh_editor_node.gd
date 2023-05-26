@@ -8,6 +8,10 @@ const COLOR_TITLE_ORPHAN := Color.ORANGE
 
 
 var beh: BehNode = null
+var order_label: Label = null
+var custom_label: Label = null
+var child_index := -1
+var call_order_matters := false
 var _needs_update := false
 var _is_orphan := false
 var is_orphan: bool:
@@ -16,9 +20,20 @@ var is_orphan: bool:
 		if _is_orphan != value: _needs_update = true
 		_is_orphan = value
 var dbg_label: Label = null
+var _mouse_inside := false
+
+
+# === Signals ===
+
+
+signal mouse_clicked(this_node: BehEditorNode)
 
 
 # === Godot Events ===
+
+
+func _ready():
+	self.mouse_entered.connect(on_mouse_entered)
 
 
 func _draw():
@@ -30,6 +45,24 @@ func _process(_dt):
 	if !_needs_update: return
 	_needs_update = false
 	update_view()
+
+
+func _gui_input(event):
+	if event is InputEventMouseButton:
+		if event.button_index == MOUSE_BUTTON_LEFT && event.pressed:
+#			print("[BehEditorNode] Clicked! Emitting mouse_clicked signal.")
+			mouse_clicked.emit(self)
+
+
+# === UI Signals ===
+
+
+func on_mouse_entered():
+	_mouse_inside = true
+
+
+func on_mouse_exited():
+	_mouse_inside = false
 
 
 # === Render Update ===
@@ -73,10 +106,19 @@ func init_node_view():
 	# Answer: Probably just labels inside the node?
 	slot0.name = "Foo Bar" 
 	
-	# Initialize a label on the interior of the node with debug information.
-	if self.dbg_label == null:
-		self.dbg_label = Label.new()
-		self.add_child(dbg_label)
+#	# Initialize a label on the interior of the node with debug information.
+#	if self.dbg_label == null:
+#		self.dbg_label = Label.new()
+#		self.add_child(dbg_label)
+	if self.order_label == null:
+		self.order_label = Label.new()
+		self.order_label.add_theme_color_override("font_color", Color.DIM_GRAY)
+		self.add_child(order_label)
+	if self.custom_label == null:
+		self.custom_label = Label.new()
+		self.custom_label.add_theme_color_override("font_color", Color.DARK_GRAY)
+		self.add_child(custom_label)
+		
 
 
 func update_view():
@@ -85,13 +127,28 @@ func update_view():
 	else:
 		self.add_theme_color_override("title_color", beh.editor_get_color())
 	
-	# Debug label text.
-	dbg_label.text = "name: ...%s\ninst: ...%s" % [\
-		name.substr(len(String(name)) - 5), str(self.get_instance_id()).substr(len(str(self.get_instance_id())) - 5)]
+#	# Debug label text.
+#	dbg_label.text = "name: ...%s\ninst: ...%s" % [\
+#		name.substr(len(String(name)) - 5), str(self.get_instance_id()).substr(len(str(self.get_instance_id())) - 5)]
+	
+	# Order label text for when the label is in a sequence.
+	if self.call_order_matters && self.child_index != -1:
+		order_label.text = "(Sequence: %s)" % self.child_index
+		order_label.show()
+	else:
+		order_label.text = ""
+		order_label.hide()
 	
 	if !validate_beh():
 		render_view_invalid()
 	else:
+		var custom_text = beh.editor_get_body_text()
+		if custom_text == null: custom_text = ""
+		if custom_label != null:
+			custom_label.text = custom_text
+			if len(custom_label.text) > 0: custom_label.show()
+			else: custom_label.hide()
+		
 		render_view_node()
 
 

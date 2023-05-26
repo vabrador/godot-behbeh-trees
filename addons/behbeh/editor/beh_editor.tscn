@@ -93,14 +93,17 @@ custom_minimum_size = Vector2(0, 6)
 layout_mode = 2
 
 [node name="DbgLabelRootId" type="Label" parent="HCtn/SideCtnMargins/SideCtn/DbgInfoCtn"]
+visible = false
 layout_mode = 2
 text = "Root Id: (none)"
 
 [node name="DbgLabelOrphanCount" type="Label" parent="HCtn/SideCtnMargins/SideCtn/DbgInfoCtn"]
+visible = false
 layout_mode = 2
 text = "Tracked Orphan Count: (none)"
 
 [node name="DbgLabelBehCt" type="Label" parent="HCtn/SideCtnMargins/SideCtn/DbgInfoCtn"]
+visible = false
 layout_mode = 2
 text = "Total Beh Count: (none)"
 
