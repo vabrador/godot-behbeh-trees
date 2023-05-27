@@ -215,12 +215,11 @@ func _process(dt):
 				# Update orphan status for editor nodes.
 				# Also update other visual state.
 				if valid_beh:
+					ed_node.beh._editor_ref = self
 					ed_node.is_orphan = active_tree.get_is_orphan(ed_node.beh)
 					var parent_beh = active_tree.get_parent_node(ed_node.beh)
-					if parent_beh != null && parent_beh is BehNodeASequence:
-						ed_node.call_order_matters = true
-					else:
-						ed_node.call_order_matters = false
+					var child_order_matters = parent_beh != null && parent_beh.get_does_child_order_matter()
+					ed_node.call_order_matters = child_order_matters
 					ed_node.child_index = active_tree.get_child_index(ed_node.beh)
 				# Children connections.
 				for child_beh in ed_node.beh.get_children():

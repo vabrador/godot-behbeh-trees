@@ -57,7 +57,8 @@ func get_children() -> Array[BehNode]:
 	return children
 
 
-func get_can_add_child() -> bool: return true
+func get_can_add_child() -> bool:
+	return true
 
 
 func try_add_child(new_child: BehNode) -> bool:

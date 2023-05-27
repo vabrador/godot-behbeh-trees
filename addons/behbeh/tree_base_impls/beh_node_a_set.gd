@@ -10,7 +10,7 @@ var completed = null
 
 
 func editor_get_name() -> String: return "Set"
-func editor_get_color() -> Color: return Color.DEEP_SKY_BLUE
+func editor_get_color() -> Color: return BehEditorNode.COLOR_TITLE_META
 
 
 # === Overrides ===

@@ -1,0 +1,23 @@
+@tool
+class_name BehNodeZTemplate
+extends BehNode
+
+
+# Exports here.
+# @export var my_export := 0
+
+
+# === Editor Overrides ===
+
+
+func editor_get_name() -> String: return "My Behavior Node"
+func editor_get_color() -> Color: return BehEditorNode.COLOR_TITLE_DEFAULT
+#func editor_get_body_text() -> String: return ""
+
+
+# === Overrides ===
+
+
+func tick(_dt: float, _bb: Dictionary) -> BehConst.Status:
+	return BehConst.Status.Resolved
+

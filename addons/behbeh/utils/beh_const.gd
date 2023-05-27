@@ -8,3 +8,4 @@ enum Status { Busy = 0, Resolved = 1, Failed = 2 }
 const UNSET_FLOAT: float = INF
 ## Positive infinity. Interpret as "not set" for Vector2s.
 const UNSET_VEC: Vector2 = Vector2(UNSET_FLOAT, UNSET_FLOAT)
+

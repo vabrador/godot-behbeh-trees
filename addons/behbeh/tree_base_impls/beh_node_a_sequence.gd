@@ -7,10 +7,13 @@ extends BehNodeXMultiChildren
 
 
 func editor_get_name() -> String: return "Sequence"
-func editor_get_color() -> Color: return Color.DEEP_SKY_BLUE
+func editor_get_color() -> Color: return BehEditorNode.COLOR_TITLE_META
 
 
 # === Overrides ===
+
+
+func get_does_child_order_matter() -> bool: return true
 
 
 func tick(dt: float, bb: Dictionary) -> BehConst.Status:

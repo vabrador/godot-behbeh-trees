@@ -10,8 +10,8 @@ extends BehNode
 
 
 func editor_get_name() -> String: return "Debug: Print"
-func editor_get_color() -> Color: return Color.PLUM
-func editor_get_body_text() -> String: return msg
+func editor_get_color() -> Color: return BehEditorNode.COLOR_TITLE_DEBUG
+func editor_get_body_text() -> String: return "\"%s\"" % msg
 
 
 # === Overrides ===

@@ -3,8 +3,12 @@ class_name BehEditorNode
 extends GraphNode
 
 
-const COLOR_CONNECTION_CONTROL_FLOW := Color.AQUAMARINE
+const COLOR_CONNECTION := Color.AQUAMARINE
+const COLOR_TITLE_DEFAULT := Color.ANTIQUE_WHITE
 const COLOR_TITLE_ORPHAN := Color.ORANGE
+const COLOR_TITLE_META := Color.DEEP_SKY_BLUE
+const COLOR_TITLE_UTILITY := Color.BURLYWOOD
+const COLOR_TITLE_DEBUG := Color.PLUM
 
 
 var beh: BehNode = null
@@ -84,8 +88,8 @@ func init_node_view():
 	# Set up left & right slots.
 	self.set_slot(
 		0, # slot idx
-		has_left_slot, TYPE_BOOL, COLOR_CONNECTION_CONTROL_FLOW,  # left slot
-		has_right_slot, TYPE_BOOL, COLOR_CONNECTION_CONTROL_FLOW,  # right slot
+		has_left_slot, TYPE_BOOL, COLOR_CONNECTION,  # left slot
+		has_right_slot, TYPE_BOOL, COLOR_CONNECTION,  # right slot
 		null, null, # icons
 		false		# draw_stylebox (?)
 	)
@@ -133,7 +137,7 @@ func update_view():
 	
 	# Order label text for when the label is in a sequence.
 	if self.call_order_matters && self.child_index != -1:
-		order_label.text = "(Sequence: %s)" % self.child_index
+		order_label.text = "(Order: %s)" % self.child_index
 		order_label.show()
 	else:
 		order_label.text = ""
@@ -142,12 +146,16 @@ func update_view():
 	if !validate_beh():
 		render_view_invalid()
 	else:
+		# Update custom text.
 		var custom_text = beh.editor_get_body_text()
 		if custom_text == null: custom_text = ""
 		if custom_label != null:
 			custom_label.text = custom_text
 			if len(custom_label.text) > 0: custom_label.show()
 			else: custom_label.hide()
+		
+		# Update slot color(s).
+		# TODO -- NYI.
 		
 		render_view_node()
 

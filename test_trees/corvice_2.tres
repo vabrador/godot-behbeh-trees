@@ -1,0 +1,237 @@
+[gd_resource type="Resource" script_class="BehTree" load_steps=31 format=3 uid="uid://coqvvis5ig3l4"]
+
+[ext_resource type="Script" path="res://addons/behbeh/tree_builtin_impls/beh_node_b_debug_print.gd" id="1_v2eiw"]
+[ext_resource type="Script" path="res://addons/behbeh/tree_builtin_impls/beh_node_b_placeholder.gd" id="2_n6ia4"]
+[ext_resource type="Script" path="res://addons/behbeh/tree_builtin_impls/beh_node_b_set_bb_value.gd" id="3_n8gd0"]
+[ext_resource type="Script" path="res://addons/behbeh/tree_base_impls/beh_node_a_sequence.gd" id="4_hcofn"]
+[ext_resource type="Script" path="res://addons/behbeh/tree_base_impls/beh_node_a_set.gd" id="5_ftsud"]
+[ext_resource type="Script" path="res://addons/behbeh/tree_base_impls/beh_node_a_condition.gd" id="6_wphod"]
+[ext_resource type="Script" path="res://addons/behbeh/tree_base_impls/beh_node_a_select.gd" id="7_jqt0n"]
+[ext_resource type="Script" path="res://addons/behbeh/tree_base_impls/beh_node_a_entry_point.gd" id="8_7mkub"]
+[ext_resource type="Script" path="res://addons/behbeh/tree/beh_tree.gd" id="9_2d5vs"]
+
+[sub_resource type="Resource" id="Resource_vwm3y"]
+resource_name = "BEHNODE__res://corvice_2.tres::Resource_vwm3y__-9223367487427385992"
+script = ExtResource("1_v2eiw")
+msg = "Idle behavior"
+
+[sub_resource type="Resource" id="Resource_u1fcn"]
+resource_name = "BEHNODE__res://corvice_2.tres::Resource_u1fcn__-9223367361447270858"
+script = ExtResource("1_v2eiw")
+msg = "Hostile behavior"
+
+[sub_resource type="Resource" id="Resource_o62jf"]
+resource_name = "BEHNODE__res://corvice_2.tres::Resource_o62jf__-9223362675151408117"
+script = ExtResource("2_n6ia4")
+wait_ticks = 200
+print_msg = "Wander behavior (actor motion)"
+as_warning = false
+start_prefix = "[Placeholder] "
+finish_prefix = "[Placeholder] Finished: "
+print_started = true
+print_finished = false
+
+[sub_resource type="Resource" id="Resource_np4w3"]
+resource_name = "BEHNODE__res://corvice_2.tres::Resource_np4w3__-9223367823022037474"
+script = ExtResource("3_n8gd0")
+bb_key = "aggro_target"
+to_val_expr = "\"some_target\""
+
+[sub_resource type="Resource" id="Resource_2g1v2"]
+resource_name = "BEHNODE__res://corvice_2.tres::Resource_2g1v2__-9223370026508029709"
+script = ExtResource("4_hcofn")
+children = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([SubResource("Resource_o62jf"), SubResource("Resource_np4w3")])
+
+[sub_resource type="Resource" id="Resource_keoqp"]
+resource_name = "BEHNODE__res://corvice_2.tres::Resource_keoqp__-9223357214654122261"
+script = ExtResource("5_ftsud")
+children = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([SubResource("Resource_2g1v2")])
+
+[sub_resource type="Resource" id="Resource_gs8ar"]
+resource_name = "BEHNODE__res://corvice_2.tres::Resource_gs8ar__-9223357611233955792"
+script = ExtResource("6_wphod")
+bb_key = "aggro_target"
+equals_expr = "\"\""
+invert = false
+debug_override = 0
+children = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([SubResource("Resource_keoqp")])
+
+[sub_resource type="Resource" id="Resource_pi8i0"]
+resource_name = "BEHNODE__res://corvice_2.tres::Resource_pi8i0__-9223370085530278129"
+script = ExtResource("2_n6ia4")
+wait_ticks = 120
+print_msg = "AxialApproach"
+as_warning = false
+start_prefix = "[Placeholder] "
+finish_prefix = "[Placeholder] Finished: "
+print_started = true
+print_finished = false
+
+[sub_resource type="Resource" id="Resource_5ajse"]
+resource_name = "BEHNODE__res://corvice_2.tres::Resource_5ajse__-9223368910990940197"
+script = ExtResource("2_n6ia4")
+wait_ticks = 60
+print_msg = "generic animation peck_windup"
+as_warning = false
+start_prefix = "[Placeholder] "
+finish_prefix = "[Placeholder] Finished: "
+print_started = true
+print_finished = false
+
+[sub_resource type="Resource" id="Resource_u01am"]
+resource_name = "BEHNODE__res://corvice_2.tres::Resource_u01am__-9223368869299558529"
+script = ExtResource("2_n6ia4")
+wait_ticks = 0
+print_msg = "actor animation special1"
+as_warning = false
+start_prefix = "[Placeholder] "
+finish_prefix = "[Placeholder] Finished: "
+print_started = true
+print_finished = false
+
+[sub_resource type="Resource" id="Resource_kv2qq"]
+resource_name = "BEHNODE__res://corvice_2.tres::Resource_kv2qq__-9223369134446679988"
+script = ExtResource("5_ftsud")
+children = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([SubResource("Resource_5ajse"), SubResource("Resource_u01am")])
+
+[sub_resource type="Resource" id="Resource_s3afs"]
+resource_name = "BEHNODE__res://corvice_2.tres::Resource_s3afs__-9223364826611259786"
+script = ExtResource("2_n6ia4")
+wait_ticks = 90
+print_msg = "Lunge"
+as_warning = false
+start_prefix = "[Placeholder] "
+finish_prefix = "[Placeholder] Finished: "
+print_started = true
+print_finished = false
+
+[sub_resource type="Resource" id="Resource_lusmi"]
+resource_name = "BEHNODE__res://corvice_2.tres::Resource_lusmi__-9223364800002591800"
+script = ExtResource("2_n6ia4")
+wait_ticks = 2
+print_msg = "Spawn attack missile"
+as_warning = false
+start_prefix = "[Placeholder] "
+finish_prefix = "[Placeholder] Finished: "
+print_started = true
+print_finished = false
+
+[sub_resource type="Resource" id="Resource_n8cts"]
+resource_name = "BEHNODE__res://corvice_2.tres::Resource_n8cts__-9223364780843014261"
+script = ExtResource("2_n6ia4")
+wait_ticks = 0
+print_msg = "actor animation special1"
+as_warning = false
+start_prefix = "[Placeholder] "
+finish_prefix = "[Placeholder] Finished: "
+print_started = true
+print_finished = false
+
+[sub_resource type="Resource" id="Resource_vh4o6"]
+resource_name = "BEHNODE__res://corvice_2.tres::Resource_vh4o6__-9223369111663217652"
+script = ExtResource("5_ftsud")
+children = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([SubResource("Resource_s3afs"), SubResource("Resource_lusmi"), SubResource("Resource_n8cts")])
+
+[sub_resource type="Resource" id="Resource_emnmn"]
+resource_name = "BEHNODE__res://corvice_2.tres::Resource_emnmn__-9223369397043665342"
+script = ExtResource("4_hcofn")
+children = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([SubResource("Resource_kv2qq"), SubResource("Resource_vh4o6")])
+
+[sub_resource type="Resource" id="Resource_8ki6w"]
+resource_name = "BEHNODE__res://corvice_2.tres::Resource_8ki6w__-9223366368957503651"
+script = ExtResource("4_hcofn")
+children = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([SubResource("Resource_pi8i0"), SubResource("Resource_emnmn")])
+
+[sub_resource type="Resource" id="Resource_eo4yj"]
+resource_name = "BEHNODE__res://corvice_2.tres::Resource_eo4yj__-9223357192541753541"
+script = ExtResource("5_ftsud")
+children = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([SubResource("Resource_8ki6w")])
+
+[sub_resource type="Resource" id="Resource_ucrfy"]
+resource_name = "BEHNODE__res://corvice_2.tres::Resource_ucrfy__-9223357435375177964"
+script = ExtResource("6_wphod")
+bb_key = "aggro_target"
+equals_expr = "\"\""
+invert = true
+debug_override = 0
+children = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([SubResource("Resource_eo4yj")])
+
+[sub_resource type="Resource" id="Resource_fuin4"]
+resource_name = "BEHNODE__res://corvice_2.tres::Resource_fuin4__-9223357653697087648"
+script = ExtResource("7_jqt0n")
+children = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([SubResource("Resource_gs8ar"), SubResource("Resource_ucrfy")])
+
+[sub_resource type="Resource" id="Resource_s8p1u"]
+resource_name = "BEHNODE__res://corvice_2.tres::Resource_s8p1u__-9223357693240985828"
+script = ExtResource("8_7mkub")
+child = SubResource("Resource_fuin4")
+
+[resource]
+script = ExtResource("9_2d5vs")
+roots = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([SubResource("Resource_s8p1u")])
+orphans = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([SubResource("Resource_vwm3y"), SubResource("Resource_u1fcn")])
+node_meta = {
+"BEHNODE__res://corvice_2.tres::Resource_2g1v2__-9223370026508029709": {
+"ed_offset": Vector2(940, -420)
+},
+"BEHNODE__res://corvice_2.tres::Resource_5ajse__-9223368910990940197": {
+"ed_offset": Vector2(1600, 120)
+},
+"BEHNODE__res://corvice_2.tres::Resource_8ki6w__-9223366368957503651": {
+"ed_offset": Vector2(940, 160)
+},
+"BEHNODE__res://corvice_2.tres::Resource_emnmn__-9223369397043665342": {
+"ed_offset": Vector2(1160, 320)
+},
+"BEHNODE__res://corvice_2.tres::Resource_eo4yj__-9223357192541753541": {
+"ed_offset": Vector2(840, 160)
+},
+"BEHNODE__res://corvice_2.tres::Resource_fuin4__-9223357653697087648": {
+"ed_offset": Vector2(440, -120)
+},
+"BEHNODE__res://corvice_2.tres::Resource_gs8ar__-9223357611233955792": {
+"ed_offset": Vector2(600, -420)
+},
+"BEHNODE__res://corvice_2.tres::Resource_keoqp__-9223357214654122261": {
+"ed_offset": Vector2(840, -420)
+},
+"BEHNODE__res://corvice_2.tres::Resource_kv2qq__-9223369134446679988": {
+"ed_offset": Vector2(1380, 180)
+},
+"BEHNODE__res://corvice_2.tres::Resource_lusmi__-9223364800002591800": {
+"ed_offset": Vector2(1600, 460)
+},
+"BEHNODE__res://corvice_2.tres::Resource_n8cts__-9223364780843014261": {
+"ed_offset": Vector2(1600, 560)
+},
+"BEHNODE__res://corvice_2.tres::Resource_np4w3__-9223367823022037474": {
+"ed_offset": Vector2(1160, -360)
+},
+"BEHNODE__res://corvice_2.tres::Resource_o62jf__-9223362675151408117": {
+"ed_offset": Vector2(1160, -500)
+},
+"BEHNODE__res://corvice_2.tres::Resource_pi8i0__-9223370085530278129": {
+"ed_offset": Vector2(1380, -60)
+},
+"BEHNODE__res://corvice_2.tres::Resource_s3afs__-9223364826611259786": {
+"ed_offset": Vector2(1600, 360)
+},
+"BEHNODE__res://corvice_2.tres::Resource_s8p1u__-9223357693240985828": {
+"ed_offset": Vector2(280, -120)
+},
+"BEHNODE__res://corvice_2.tres::Resource_u01am__-9223368869299558529": {
+"ed_offset": Vector2(1600, 220)
+},
+"BEHNODE__res://corvice_2.tres::Resource_u1fcn__-9223367361447270858": {
+"ed_offset": Vector2(940, 80)
+},
+"BEHNODE__res://corvice_2.tres::Resource_ucrfy__-9223357435375177964": {
+"ed_offset": Vector2(600, 160)
+},
+"BEHNODE__res://corvice_2.tres::Resource_vh4o6__-9223369111663217652": {
+"ed_offset": Vector2(1380, 460)
+},
+"BEHNODE__res://corvice_2.tres::Resource_vwm3y__-9223367487427385992": {
+"ed_offset": Vector2(940, -500)
+}
+}

@@ -22,7 +22,7 @@ signal child_removed(former_child: BehNode)
 # === Vars ===
 
 
-# (none so far)
+var _editor_ref = null # Used at edit-time to pass the BehTreeEditor for debug checks.
 
 
 # === Override Funcs ===
@@ -63,11 +63,6 @@ func get_children() -> Array[BehNode]:
 	It's actually IMPORTANT that this IS the backing array of children for the node! Because
 	the return value is sometimes sorted by the BehTreeEditor, so that children are iterated
 	according to their visual order (top to bottom, left to right)."""
-	# TODO: Refactor to get_children overrides
-	if self is BehNodeASequence:
-		return self.seq as Array[BehNode]
-	if self is BehNodeASet:
-		return self.set_behs as Array[BehNode]
 	var empty_arr: Array[BehNode] = []
 	return empty_arr
 
@@ -95,6 +90,10 @@ func remove_child(child_to_remove: BehNode) -> bool:
 		push_error("[BehNode] Invalid operation: Remove self as child.")
 		return false
 	# Default BehNode can't have children so return false.
+	return false
+
+
+func get_does_child_order_matter() -> bool:
 	return false
 
 
@@ -191,5 +190,15 @@ func get_all_children_with_parent(include_self: bool = true) -> Array:
 		for child_child in child_children_copy:
 			to_visit.push_front([child_child, curr_child])
 	return all_pairs
+
+
+func get_child_idx_or_null(idx: int) -> Variant:
+	"""Returns the BehNode child at the specified index of this node, or null if one doesn't exist there."""
+	var children = self.get_children()
+	if children == null || len(children) == 0:
+		return null
+	if idx < 0 || idx >= len(children):
+		return null
+	return children[idx]
 
 
