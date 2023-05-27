@@ -1,10 +1,10 @@
 [gd_scene load_steps=3 format=3 uid="uid://b06ucci8r4i4a"]
 
 [ext_resource type="Script" path="res://test_tree_user.gd" id="1_eubli"]
-[ext_resource type="Resource" uid="uid://coqvvis5ig3l4" path="res://test_trees/corvice_2.tres" id="2_e337n"]
+[ext_resource type="Resource" uid="uid://cy2xpjvf1f7tb" path="res://test_trees/corvice_3.tres" id="2_3l7ta"]
 
 [node name="test_scene" type="Node2D"]
 
 [node name="TestTreeUser" type="Node" parent="."]
 script = ExtResource("1_eubli")
-beh_tree = ExtResource("2_e337n")
+beh_tree = ExtResource("2_3l7ta")
