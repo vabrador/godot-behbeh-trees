@@ -51,16 +51,22 @@ func _ready():
 	self.mouse_entered.connect(on_mouse_entered)
 	self.mouse_exited.connect(on_mouse_exited)
 
+#
+#func _draw():
+##	_needs_update = true
+##	update_view()
 
-func _draw():
-	_needs_update = true
+
+func _enter_tree():
+#	print("enter tree for BehEditorNode")
+	update_view()
 
 
 func _process(_dt):
 	if !Engine.is_editor_hint(): return
 	if !_needs_update: return
-	_needs_update = false
 	update_view()
+	_needs_update = false
 
 
 func _gui_input(event):
@@ -160,10 +166,12 @@ func init_node_view():
 		self.order_label = Label.new()
 		self.order_label.add_theme_color_override("font_color", Color.DIM_GRAY)
 		self.add_child(order_label)
+		_needs_update = true
 	if self.custom_label == null:
 		self.custom_label = Label.new()
 		self.custom_label.add_theme_color_override("font_color", Color.DARK_GRAY)
 		self.add_child(custom_label)
+		_needs_update = true
 		
 
 

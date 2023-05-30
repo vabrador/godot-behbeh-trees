@@ -83,6 +83,9 @@ var _del_hint_last_parent: Dictionary = {}
 var _graph_subscribed := false
 var _pending_set_selected_nodes = null
 var _pending_inspect_node = null # Update-consumed BehNode to inspect.
+var _pending_scroll_offset = null
+var _pending_zoom = null
+var _created_ed_node_ct = null
 
 
 # === VMD Var Menu Entry Dictionaries ===
@@ -109,6 +112,15 @@ func _ready():
 	subscribe_graph_edit_signals()
 	subscribe_editor_node_signals()
 	_is_ready = true
+	print("ready called")
+
+
+func _enter_tree():
+#	print("enter tree called")
+#	print("[BehEditor] (_enter_tree) Called. Active_tree? %s" % self.active_tree)
+	# Try to prevent frame-delay lag by creating editor nodes as soon as we enter the tree.
+	if self.active_tree != null:
+		update_create_destroy_editor_nodes()
 
 
 func _exit_tree():
@@ -187,97 +199,12 @@ func _process(dt):
 		_pending_parent_child_relations.clear()
 		_should_update = true # Re-update to invoke a re-save.
 	
-	# Node Editor view objects
-	# ------------------------
+	# Create & Destroy Editor Nodes to match the Active Tree
+	# ------------------------------------------------------
 	#
 	# Ensure that every node in the active_tree has an editor node.
-	var created_ed_node_ct = 0
-	if active_tree.is_empty(): pass # (Nothing to render in this case)
-	else:
-		for beh in active_tree.get_all_nodes():
-			var id = beh.try_get_stable_id()
-			if id == null:
-				dprintd("[BehEditor] (BehEditorNode Sync) Skipping missing stab_id for node %s" % [
-					beh.get_instance_id()])
-			if id != null && !(id is StringName):
-				push_error("Expected StringName as NodeBeh stable_id for node %s" % beh.get_instance_id())
-			if id != null && id is StringName && !_editor_node_map.has(id):
-				dprintd("[BehEditor] (BehEditorNode Sync) Creating new BehEditorNode for node %s" % id)
-				create_ed_node_and_update_map(beh, id)
-				created_ed_node_ct += 1
-			# Normal sync for each BehEditorNode.
-			if id != null && id is StringName && _editor_node_map.has(id):
-				var ed_node: BehEditorNode = _editor_node_map[id]
-				var valid_beh = ed_node.validate_beh()
-				if !valid_beh:
-					push_warning("[BehEditor] Found INVALID beh in ed_node %s" % ed_node)
-					continue
-#				if !valid_beh:
-#					ed_node.set_title_color(BehEditorNode.RED)
-				# Update orphan status for editor nodes.
-				# Also update other visual state.
-				if valid_beh:
-					ed_node.beh._editor_ref = self
-					ed_node.is_orphan = active_tree.get_is_orphan(ed_node.beh)
-					var parent_beh = active_tree.get_parent_node(ed_node.beh)
-					var child_order_matters = parent_beh != null && parent_beh.get_does_child_order_matter()
-					ed_node.call_order_matters = child_order_matters
-					ed_node.child_index = active_tree.get_child_index(ed_node.beh)
-				# Children connections.
-				for child_beh in ed_node.beh.get_children():
-					var child_id = child_beh.try_get_stable_id()
-					dprintd("[BehEditor] (BehEditorNode Sync Children) Considering parent %s, child %s" % [
-						id, child_id])
-					if child_id == null:
-						push_error("[BehEditor] (BehEditorNode Sync Children) Failed to get child stable ID.")
-						continue
-					if id == child_id:
-						push_error("[BehEditor] (BehEditorNodeSync Children) Unexpected: child_id and parent id match: %s" % [
-							id])
-						continue
-					if !_editor_node_map.has(child_id):
-						dprintd("[BehEditor] (BehEditorNode Sync Children) Creating new BehEditorNode for node %s" % child_id)
-						create_ed_node_and_update_map(child_beh, child_id)
-					var child_ed_node: BehEditorNode = _editor_node_map[child_id]
-					dprintd("[BehEditor] (BehEditorNode Sync Children) Calling graph.connect_node")
-					var conn_err = graph.connect_node(ed_node.name, 0, child_ed_node.name, 0)
-					if conn_err:
-						push_error("[BehEditor] (BehEditorNode Sync Children) Error connecting %s -> %s: %s" % [
-							ed_node.name, child_ed_node.name, conn_err])
-					dprintd("[BehEditor] (BehEditorNode Sync Children) DONE calling graph.connect_node")
-#					else:
-#						dprintd("[BehEditor] (BehEditorNode Sync Children) Connected")
-	# Also ensure all editor nodes correspond to actual behaviors in the tree, otherwise remove them.
-	var ed_nodes_to_remove: Array[BehEditorNode] = []
-	for ed_node in get_editor_nodes():
-		var valid_beh = ed_node.validate_beh()
-		if !valid_beh || !active_tree.contains(ed_node.beh):
-			dprintd("[BehEditor] (BehEditorNode Sync) Deleting editor node data for a non-tree behavior. Ed_node is %s" % ed_node)
-			if ed_node.beh != null:
-				dprintd("[BehEditor] (BehEditorNode Sync) (non-tree behavior was: %s)" % ed_node.beh)
-			ed_nodes_to_remove.push_back(ed_node)
-	var removed_ct = 0
-	for del_ed_node in ed_nodes_to_remove:
-		remove_editor_node(del_ed_node)
-		removed_ct += 1
-	if removed_ct > 0:
-		dprintd("[BehEditor] (BehEditorNode Sync) Removed %s editor nodes for non-tree behaviors." % removed_ct)
-	# Ensure existing graph connections are for actual parent->child connections.
-	# { from_port: 0, from: "GraphNode name 0", to_port: 1, to: "GraphNode name 1" }
-	var remove_conns = []
-	var removed_conn_ct = 0
-	for conn_info in graph.get_connection_list():
-		var ed_from = try_get_node_from_name(conn_info["from"])
-		var ed_to = try_get_node_from_name(conn_info["to"])
-		var beh_par = ed_from.beh
-		var beh_child = ed_to.beh
-		if !active_tree.has_parent_child_relation(beh_par, beh_child):
-			remove_conns.push_back(conn_info)
-	for rc in remove_conns:
-		graph.disconnect_node(rc["from"], rc["from_port"], rc["to"], rc["to_port"])
-		removed_conn_ct += 1
-	if removed_conn_ct > 0:
-		dprintd("[BehEditor] (BehEditorNode Sync) Removed %s connections for non-existent parent-child relationships." % removed_ct)
+	update_create_destroy_editor_nodes()
+	
 	
 	# Update editor node subscriptions.
 	# ---------------------------------
@@ -286,13 +213,38 @@ func _process(dt):
 	# we handle any selection logic that may fire signals.
 	subscribe_editor_node_signals()
 	
+	# Update pending scroll offset.
+	# -----------------------------
+	#
+	# We don't set the scroll offset until after any pending node inspection is resolved.
+#	print("Pending scroll offset: %s" % _pending_scroll_offset)
+#	print("graph.scroll_offset BEFORE: %s" % graph.scroll_offset)
+#	print("graph.zoom BEFORE: %s" % graph.zoom)
+	var has_pending_view_info = _pending_zoom != null || _pending_scroll_offset != null
+	var can_set_view_info = true
+	# Wait until after editor nodes have stabilized to consume view info.
+	if _created_ed_node_ct > 0: can_set_view_info = false
+	if len(_pending_node_positions) > 0: can_set_view_info = false
+	# Consume pending view info.
+	if has_pending_view_info && can_set_view_info:
+#		print("CONSUMING PENDING VIEW INFO")
+#		graph.scroll_offset = _pending_scroll_offset
+		if _pending_scroll_offset != null:
+			graph.scroll_offset = _pending_scroll_offset
+			_pending_scroll_offset = null
+		if _pending_zoom != null:
+			graph.zoom = _pending_zoom
+			_pending_zoom = null
+#	print("graph.scroll_offset AFTER: %s" % graph.scroll_offset)
+#	print("graph.zoom AFTER: %s" % graph.zoom)
+	
 	# Update pending selected nodes.
 	# ------------------------------
 	#
 	# If this update created new editor nodes, we have to update again in case
 	# there are _pending_set_selected_nodes.
 	var can_set_pending_selection = true
-	if created_ed_node_ct > 0:
+	if _created_ed_node_ct > 0:
 		# Can't set pending selection if we just created editor nodes because we
 		# haven't subscribed to callbacks.
 		can_set_pending_selection = false
@@ -316,6 +268,7 @@ func _process(dt):
 	#
 	if _pending_inspect_node != null:
 		inspect_node(_pending_inspect_node) # expects BehNode
+#		print("CALLED inspect_node !!")
 		_pending_inspect_node = null
 	
 	# Validate selected nodes
@@ -405,6 +358,112 @@ func _process(dt):
 	pass
 
 
+func update_create_destroy_editor_nodes():
+	"""Called on enter_tree if there's already an active_tree, and called on process to ensure
+	editor nodes exist for the tree and unnecessary editor nodes do NOT exist.
+	Every call clears _created_ed_node_ct, which can be checked to see if the latest update
+	created new editor nodes, which may require certain operations to wait until the next
+	update."""
+	_created_ed_node_ct = 0
+	if active_tree.is_empty(): pass # (Nothing to render in this case)
+	else:
+		for beh in active_tree.get_all_nodes():
+			var id = beh.try_get_stable_id()
+			if id == null:
+				dprintd("[BehEditor] (BehEditorNode Sync) Skipping missing stab_id for node %s" % [
+					beh.get_instance_id()])
+			if id != null && !(id is StringName):
+				push_error("Expected StringName as NodeBeh stable_id for node %s" % beh.get_instance_id())
+			if id != null && id is StringName && !_editor_node_map.has(id):
+				dprintd("[BehEditor] (BehEditorNode Sync) Creating new BehEditorNode for node %s" % id)
+				create_ed_node_and_update_map(beh, id)
+				_created_ed_node_ct += 1
+			# Normal sync for each BehEditorNode.
+			if id != null && id is StringName && _editor_node_map.has(id):
+				var ed_node: BehEditorNode = _editor_node_map[id]
+				var valid_beh = ed_node.validate_beh()
+				if !valid_beh:
+					push_warning("[BehEditor] Found INVALID beh in ed_node %s" % ed_node)
+					continue
+#				if !valid_beh:
+#					ed_node.set_title_color(BehEditorNode.RED)
+				# Update orphan status for editor nodes.
+				# Also update other visual state.
+				if valid_beh:
+					ed_node.beh._editor_ref = self
+					ed_node.is_orphan = active_tree.get_is_orphan(ed_node.beh)
+					var parent_beh = active_tree.get_parent_node(ed_node.beh)
+					var child_order_matters = parent_beh != null && parent_beh.get_does_child_order_matter()
+					ed_node.call_order_matters = child_order_matters
+					ed_node.child_index = active_tree.get_child_index(ed_node.beh)
+				# Children connections.
+				for child_beh in ed_node.beh.get_children():
+					var child_id = child_beh.try_get_stable_id()
+					dprintd("[BehEditor] (BehEditorNode Sync Children) Considering parent %s, child %s" % [
+						id, child_id])
+					if child_id == null:
+						push_error("[BehEditor] (BehEditorNode Sync Children) Failed to get child stable ID.")
+						continue
+					if id == child_id:
+						push_error("[BehEditor] (BehEditorNodeSync Children) Unexpected: child_id and parent id match: %s" % [
+							id])
+						continue
+					if !_editor_node_map.has(child_id):
+						dprintd("[BehEditor] (BehEditorNode Sync Children) Creating new BehEditorNode for node %s" % child_id)
+						create_ed_node_and_update_map(child_beh, child_id)
+					var child_ed_node: BehEditorNode = _editor_node_map[child_id]
+					dprintd("[BehEditor] (BehEditorNode Sync Children) Calling graph.connect_node")
+					var conn_err = graph.connect_node(ed_node.name, 0, child_ed_node.name, 0)
+					if conn_err:
+						push_error("[BehEditor] (BehEditorNode Sync Children) Error connecting %s -> %s: %s" % [
+							ed_node.name, child_ed_node.name, conn_err])
+					dprintd("[BehEditor] (BehEditorNode Sync Children) DONE calling graph.connect_node")
+#					else:
+#						dprintd("[BehEditor] (BehEditorNode Sync Children) Connected")
+				# Update the editor node view. TODO: Commented-out; was investigating
+				# issue where connection lines connect too far left (due to inner Labeling changing?)
+#				ed_node.update_view()
+	# Continued-- remove editor nodes if need be.
+	# Ensure all editor nodes correspond to actual behaviors in the tree, otherwise remove them.
+	var ed_nodes_to_remove: Array[BehEditorNode] = []
+	for ed_node in get_editor_nodes():
+		var valid_beh = ed_node.validate_beh()
+		if !valid_beh || !active_tree.contains(ed_node.beh):
+			dprintd("[BehEditor] (BehEditorNode Sync) Deleting editor node data for a non-tree behavior. Ed_node is %s" % ed_node)
+			if ed_node.beh != null:
+				dprintd("[BehEditor] (BehEditorNode Sync) (non-tree behavior was: %s)" % ed_node.beh)
+			ed_nodes_to_remove.push_back(ed_node)
+	var removed_ct = 0
+	for del_ed_node in ed_nodes_to_remove:
+		remove_editor_node(del_ed_node)
+		removed_ct += 1
+	if removed_ct > 0:
+		dprintd("[BehEditor] (BehEditorNode Sync) Removed %s editor nodes for non-tree behaviors." % removed_ct)
+	
+	# Ensure existing graph connections are for actual parent->child connections.
+	# { from_port: 0, from: "GraphNode name 0", to_port: 1, to: "GraphNode name 1" }
+	var remove_conns = []
+	var removed_conn_ct = 0
+	for conn_info in graph.get_connection_list():
+		var ed_from = try_get_node_from_name(conn_info["from"])
+		var ed_to = try_get_node_from_name(conn_info["to"])
+		var beh_par = ed_from.beh
+		var beh_child = ed_to.beh
+		if !active_tree.has_parent_child_relation(beh_par, beh_child):
+			remove_conns.push_back(conn_info)
+	for rc in remove_conns:
+		graph.disconnect_node(rc["from"], rc["from_port"], rc["to"], rc["to_port"])
+		removed_conn_ct += 1
+	if removed_conn_ct > 0:
+		dprintd("[BehEditor] (BehEditorNode Sync) Removed %s connections for non-existent parent-child relationships." % removed_ct)
+	
+	# Go ahead and mark a required new update if we added any new editor nodes.
+	# Many operations require editor nodes to be stabilized.
+	if _created_ed_node_ct > 0:
+		_should_update = true
+	
+
+
 func on_tree_changed():
 	"""Update visual representation if the BehTree reports that it has changed in some way."""
 	dprintd("[BehEditor] Got signal from tree: tree_changed. Will update next frame.")
@@ -434,6 +493,7 @@ func create_ed_node_and_update_map(beh: BehNode, id: StringName):
 	_editor_node_map[id] = new_ed_node
 	dprintd("[BehEditor] (create_ed_node_and_update_map) new_ed_node name is %s, pos is %s, and its parent is %s" % [
 		new_ed_node.name, new_ed_node.position_offset, new_ed_node.get_parent()])
+	_should_update = true
 
 
 func save_active_tree():
@@ -834,8 +894,19 @@ func inspect_node(beh: BehNode):
 	if ed_interface == null:
 		push_warning("[BehEditor] (inspect_node) Couldn't inspect; missing editor_interface.")
 		return
-	# Pass inspectory_only as true so we can edit the NodeBeh but we don't
-	# have this plugin receive the new edit target.
+	
+	# Store state prior to close-and-reopen.
+#	print("INSPECT NODE: Storing view info!")
+	_pending_scroll_offset = graph.scroll_offset
+	_pending_zoom = graph.zoom
+	
+	# Tell the editor to inspect the object.
+	# Sadly, we can't just set inspector_only, because that closes the plugin without apparent
+	# recourse.
+	#
+	# TODO: See if we can set a flag that SKIPS the make-not-visible call to fix this? Then it
+	# might fix the flickering issue. But might cause other issues if we set flags we intend to
+	# get consumed by a close-and-reopen (e.g. _expects_node_target!!)
 	dprintd("[BehEditor] Inspecting behavior %s" % beh)
 	self._expects_node_target = true
 	ed_interface.inspect_object(beh, "", false)
