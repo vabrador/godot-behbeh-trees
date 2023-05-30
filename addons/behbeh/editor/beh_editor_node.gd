@@ -3,12 +3,19 @@ class_name BehEditorNode
 extends GraphNode
 
 
+func dprintd(s: String): BehTreeEditor.dprintd(s)
+
+
 const COLOR_CONNECTION := Color.AQUAMARINE
 const COLOR_TITLE_DEFAULT := Color.ANTIQUE_WHITE
 const COLOR_TITLE_ORPHAN := Color.ORANGE
 const COLOR_TITLE_META := Color.DEEP_SKY_BLUE
 const COLOR_TITLE_UTILITY := Color.BURLYWOOD
 const COLOR_TITLE_DEBUG := Color.PLUM
+
+# todo delete
+## This threshold is used to fire the "mouse_released_without_drag" event
+#const MOUSE_MOVEMENT_THRESHOLD_PX_INVALIDATE_INSPECT := 2
 
 
 var beh: BehNode = null
@@ -25,12 +32,16 @@ var is_orphan: bool:
 		_is_orphan = value
 var dbg_label: Label = null
 var _mouse_inside := false
+var _is_click_in_progress := false
+var _prev_mouse_pos = null
+var _is_inspect_valid := true
 
 
 # === Signals ===
 
 
 signal mouse_clicked(this_node: BehEditorNode)
+signal mouse_released_without_drag(this_node: BehEditorNode) # Use this to trigger inspection.
 
 
 # === Godot Events ===
@@ -38,6 +49,7 @@ signal mouse_clicked(this_node: BehEditorNode)
 
 func _ready():
 	self.mouse_entered.connect(on_mouse_entered)
+	self.mouse_exited.connect(on_mouse_exited)
 
 
 func _draw():
@@ -54,8 +66,34 @@ func _process(_dt):
 func _gui_input(event):
 	if event is InputEventMouseButton:
 		if event.button_index == MOUSE_BUTTON_LEFT && event.pressed:
+			# Click event on this node.
 #			print("[BehEditorNode] Clicked! Emitting mouse_clicked signal.")
 			mouse_clicked.emit(self)
+			# Reset state for tracking whether this is an inspectable click;
+			# inspect gets invalidated if the mouse drags while the click is held.
+			_prev_mouse_pos = null
+			if _mouse_inside:
+				_is_inspect_valid = true
+				dprintd("[BehEditorNode] (_gui_input click) _is_inspect_valid true")
+			_is_click_in_progress = true
+		if event.button_index == MOUSE_BUTTON_LEFT && !event.pressed:
+			# Release event on this node.
+			dprintd("[BehEditorNode] (_gui_input release) received")
+			if _is_inspect_valid && _mouse_inside:
+				mouse_released_without_drag.emit(self)
+				dprintd("[BehEditorNode] (_gui_input release) release without drag emitted")
+			_is_click_in_progress = false
+	if event is InputEventMouseMotion:
+		# Allow an inspection event when the mouse is released after it hasn't moved.
+		if _mouse_inside:
+			var mouse_pos = event.position
+			if _prev_mouse_pos != null:
+				var mouse_delta: Vector2 = mouse_pos - _prev_mouse_pos
+				if _is_click_in_progress && abs(mouse_delta.length()) > 0:
+					_is_inspect_valid = false
+					dprintd("[BehEditorNode] (_gui_input motion) _is_inspect_valid false")
+			_prev_mouse_pos = mouse_pos
+	pass # TODO mouse_released_without_drag
 
 
 # === UI Signals ===
@@ -67,6 +105,10 @@ func on_mouse_entered():
 
 func on_mouse_exited():
 	_mouse_inside = false
+	# Reset mouse position tracking for detecting drags, so we don't have
+	# lingering state that determines if a click will inspect.
+	_prev_mouse_pos = null
+	_is_inspect_valid = false
 
 
 # === Render Update ===

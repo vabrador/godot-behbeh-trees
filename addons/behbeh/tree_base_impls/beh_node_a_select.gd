@@ -24,6 +24,9 @@ func tick(dt: float, bb: Dictionary) -> BehConst.Status:
 	Parent a Select a variety of Conditions to produce state-machine like behavior."""
 	idx = 0
 	
+	# TODO: If a child reports Busy, that child should be ticked again until it doesn't report
+	# busy.
+	
 	# Tick the current behavior.
 	while idx < len(children):
 		var beh = children[idx]

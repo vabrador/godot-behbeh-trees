@@ -29,7 +29,7 @@ func tick(dt: float, bb: Dictionary) -> BehConst.Status:
 	# Roll index. Possibly consume _keep_child from the previous tick.
 	idx = randi_range(0, len(children) - 1)
 	if _keep_child != null:
-		idx = children.find(func(c): return c == _keep_child)
+		idx = children.find(_keep_child)
 		_keep_child = null # Consume it.
 	if idx < 0 || idx >= len(children):
 		idx = randi_range(0, len(children) - 1) # reroll

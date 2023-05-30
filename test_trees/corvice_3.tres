@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="BehTree" load_steps=41 format=3 uid="uid://cy2xpjvf1f7tb"]
+[gd_resource type="Resource" script_class="BehTree" load_steps=44 format=3 uid="uid://cy2xpjvf1f7tb"]
 
 [ext_resource type="Script" path="res://addons/behbeh/tree_builtin_impls/beh_node_b_debug_print.gd" id="1_v3xr3"]
 [ext_resource type="Script" path="res://addons/behbeh/tree_builtin_impls/beh_node_b_select_random.gd" id="2_7uolx"]
@@ -35,6 +35,11 @@ msg = "Ranged attack"
 resource_name = "BEHNODE__res://test_trees/corvice_3.tres::Resource_1qlqf__-9223365129708443450"
 script = ExtResource("1_v3xr3")
 msg = "Encircle"
+
+[sub_resource type="Resource" id="Resource_wpxev"]
+resource_name = "BEHNODE__res://test_trees/corvice_3.tres::Resource_wpxev__-9223349471113294232"
+script = ExtResource("1_v3xr3")
+msg = "Fly to new position"
 
 [sub_resource type="Resource" id="Resource_o62jf"]
 resource_name = "BEHNODE__res://corvice_2.tres::Resource_o62jf__-9223362675151408117"
@@ -161,7 +166,7 @@ children = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([SubResource(
 [sub_resource type="Resource" id="Resource_y53m1"]
 resource_name = "BEHNODE__res://test_trees/corvice_3.tres::Resource_y53m1__-9223365756589115902"
 script = ExtResource("2_d0f77")
-wait_ticks = 50
+wait_ticks = 120
 print_msg = "(Ranged attack)"
 as_warning = false
 start_prefix = "[Placeholder] "
@@ -177,7 +182,7 @@ children = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([SubResource(
 [sub_resource type="Resource" id="Resource_qewes"]
 resource_name = "BEHNODE__res://test_trees/corvice_3.tres::Resource_qewes__-9223365129725216445"
 script = ExtResource("2_d0f77")
-wait_ticks = 50
+wait_ticks = 120
 print_msg = "(Encircle; move to a strategic place)"
 as_warning = false
 start_prefix = "[Placeholder] "
@@ -190,10 +195,26 @@ resource_name = "BEHNODE__res://test_trees/corvice_3.tres::Resource_5yngd__-9223
 script = ExtResource("4_y0k7g")
 children = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([SubResource("Resource_qewes")])
 
+[sub_resource type="Resource" id="Resource_oe3en"]
+resource_name = "BEHNODE__res://test_trees/corvice_3.tres::Resource_oe3en__-9223349471130071439"
+script = ExtResource("2_d0f77")
+wait_ticks = 120
+print_msg = "(Fly; move to a new position)"
+as_warning = false
+start_prefix = "[Placeholder] "
+finish_prefix = "[Placeholder] Finished: "
+print_started = true
+print_finished = false
+
+[sub_resource type="Resource" id="Resource_orwsf"]
+resource_name = "BEHNODE__res://test_trees/corvice_3.tres::Resource_orwsf__-9223349471096515216"
+script = ExtResource("4_y0k7g")
+children = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([SubResource("Resource_oe3en")])
+
 [sub_resource type="Resource" id="Resource_ld0pm"]
 resource_name = "BEHNODE__res://test_trees/corvice_3.tres::Resource_ld0pm__-9223369919519725837"
 script = ExtResource("2_7uolx")
-children = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([SubResource("Resource_x533n"), SubResource("Resource_res34"), SubResource("Resource_5yngd")])
+children = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([SubResource("Resource_x533n"), SubResource("Resource_res34"), SubResource("Resource_5yngd"), SubResource("Resource_orwsf")])
 
 [sub_resource type="Resource" id="Resource_8ki6w"]
 resource_name = "BEHNODE__res://corvice_2.tres::Resource_8ki6w__-9223366368957503651"
@@ -227,58 +248,58 @@ child = SubResource("Resource_fuin4")
 [resource]
 script = ExtResource("9_h041s")
 roots = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([SubResource("Resource_s8p1u")])
-orphans = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([SubResource("Resource_vwm3y"), SubResource("Resource_u1fcn"), SubResource("Resource_r5lpr"), SubResource("Resource_88ud3"), SubResource("Resource_1qlqf")])
+orphans = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([SubResource("Resource_vwm3y"), SubResource("Resource_u1fcn"), SubResource("Resource_r5lpr"), SubResource("Resource_88ud3"), SubResource("Resource_1qlqf"), SubResource("Resource_wpxev")])
 node_meta = {
 "BEHNODE__res://corvice_2.tres::Resource_2g1v2__-9223370026508029709": {
-"ed_offset": Vector2(880, -760)
+"ed_offset": Vector2(900, 460)
 },
 "BEHNODE__res://corvice_2.tres::Resource_5ajse__-9223368910990940197": {
-"ed_offset": Vector2(2220, 60)
+"ed_offset": Vector2(2420, 40)
 },
 "BEHNODE__res://corvice_2.tres::Resource_8ki6w__-9223366368957503651": {
 "ed_offset": Vector2(900, 820)
 },
 "BEHNODE__res://corvice_2.tres::Resource_emnmn__-9223369397043665342": {
-"ed_offset": Vector2(1780, 260)
+"ed_offset": Vector2(1980, 260)
 },
 "BEHNODE__res://corvice_2.tres::Resource_eo4yj__-9223357192541753541": {
 "ed_offset": Vector2(800, 820)
 },
 "BEHNODE__res://corvice_2.tres::Resource_fuin4__-9223357653697087648": {
-"ed_offset": Vector2(280, -280)
+"ed_offset": Vector2(280, 640)
 },
 "BEHNODE__res://corvice_2.tres::Resource_gs8ar__-9223357611233955792": {
-"ed_offset": Vector2(540, -760)
+"ed_offset": Vector2(560, 460)
 },
 "BEHNODE__res://corvice_2.tres::Resource_keoqp__-9223357214654122261": {
-"ed_offset": Vector2(780, -760)
+"ed_offset": Vector2(800, 460)
 },
 "BEHNODE__res://corvice_2.tres::Resource_kv2qq__-9223369134446679988": {
-"ed_offset": Vector2(2000, 120)
+"ed_offset": Vector2(2200, 120)
 },
 "BEHNODE__res://corvice_2.tres::Resource_lusmi__-9223364800002591800": {
-"ed_offset": Vector2(2220, 400)
+"ed_offset": Vector2(2420, 400)
 },
 "BEHNODE__res://corvice_2.tres::Resource_n8cts__-9223364780843014261": {
-"ed_offset": Vector2(2220, 500)
+"ed_offset": Vector2(2420, 500)
 },
 "BEHNODE__res://corvice_2.tres::Resource_np4w3__-9223367823022037474": {
-"ed_offset": Vector2(1100, -700)
+"ed_offset": Vector2(1120, 520)
 },
 "BEHNODE__res://corvice_2.tres::Resource_o62jf__-9223362675151408117": {
-"ed_offset": Vector2(1100, -840)
+"ed_offset": Vector2(1120, 380)
 },
 "BEHNODE__res://corvice_2.tres::Resource_pi8i0__-9223370085530278129": {
-"ed_offset": Vector2(2000, -200)
+"ed_offset": Vector2(2420, -120)
 },
 "BEHNODE__res://corvice_2.tres::Resource_s3afs__-9223364826611259786": {
-"ed_offset": Vector2(2220, 300)
+"ed_offset": Vector2(2420, 300)
 },
 "BEHNODE__res://corvice_2.tres::Resource_s8p1u__-9223357693240985828": {
-"ed_offset": Vector2(100, -280)
+"ed_offset": Vector2(60, 640)
 },
 "BEHNODE__res://corvice_2.tres::Resource_u01am__-9223368869299558529": {
-"ed_offset": Vector2(2220, 160)
+"ed_offset": Vector2(2420, 160)
 },
 "BEHNODE__res://corvice_2.tres::Resource_u1fcn__-9223367361447270858": {
 "ed_offset": Vector2(560, 740)
@@ -287,45 +308,54 @@ node_meta = {
 "ed_offset": Vector2(560, 820)
 },
 "BEHNODE__res://corvice_2.tres::Resource_vh4o6__-9223369111663217652": {
-"ed_offset": Vector2(2000, 400)
+"ed_offset": Vector2(2200, 400)
 },
 "BEHNODE__res://corvice_2.tres::Resource_vwm3y__-9223367487427385992": {
-"ed_offset": Vector2(540, -840)
+"ed_offset": Vector2(560, 380)
 },
 "BEHNODE__res://test_trees/corvice_3.tres::Resource_01dkk__-9223365314039715626": {
 "ed_offset": Vector2(0, 0)
 },
 "BEHNODE__res://test_trees/corvice_3.tres::Resource_1qlqf__-9223365129708443450": {
-"ed_offset": Vector2(1560, 1380)
+"ed_offset": Vector2(1760, 1080)
 },
 "BEHNODE__res://test_trees/corvice_3.tres::Resource_5yngd__-9223365129691666384": {
-"ed_offset": Vector2(1560, 1460)
+"ed_offset": Vector2(1760, 1160)
 },
 "BEHNODE__res://test_trees/corvice_3.tres::Resource_74q8q__-9223365314056493727": {
 "ed_offset": Vector2(0, 0)
 },
 "BEHNODE__res://test_trees/corvice_3.tres::Resource_88ud3__-9223366565284484923": {
-"ed_offset": Vector2(1540, 740)
+"ed_offset": Vector2(1760, 740)
 },
 "BEHNODE__res://test_trees/corvice_3.tres::Resource_avj00__-9223365314073270090": {
 "ed_offset": Vector2(0, 0)
 },
 "BEHNODE__res://test_trees/corvice_3.tres::Resource_ld0pm__-9223369919519725837": {
-"ed_offset": Vector2(1200, 820)
+"ed_offset": Vector2(1400, 820)
+},
+"BEHNODE__res://test_trees/corvice_3.tres::Resource_oe3en__-9223349471130071439": {
+"ed_offset": Vector2(2040, 1500)
+},
+"BEHNODE__res://test_trees/corvice_3.tres::Resource_orwsf__-9223349471096515216": {
+"ed_offset": Vector2(1760, 1500)
 },
 "BEHNODE__res://test_trees/corvice_3.tres::Resource_qewes__-9223365129725216445": {
-"ed_offset": Vector2(1840, 1460)
+"ed_offset": Vector2(2040, 1160)
 },
 "BEHNODE__res://test_trees/corvice_3.tres::Resource_r5lpr__-9223369420011673565": {
-"ed_offset": Vector2(1540, 100)
+"ed_offset": Vector2(1740, 100)
 },
 "BEHNODE__res://test_trees/corvice_3.tres::Resource_res34__-9223366669403887490": {
-"ed_offset": Vector2(1540, 820)
+"ed_offset": Vector2(1760, 820)
+},
+"BEHNODE__res://test_trees/corvice_3.tres::Resource_wpxev__-9223349471113294232": {
+"ed_offset": Vector2(1760, 1420)
 },
 "BEHNODE__res://test_trees/corvice_3.tres::Resource_x533n__-9223368625358833374": {
-"ed_offset": Vector2(1540, 180)
+"ed_offset": Vector2(1740, 180)
 },
 "BEHNODE__res://test_trees/corvice_3.tres::Resource_y53m1__-9223365756589115902": {
-"ed_offset": Vector2(1820, 820)
+"ed_offset": Vector2(2040, 820)
 }
 }

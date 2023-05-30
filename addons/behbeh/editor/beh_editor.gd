@@ -18,6 +18,7 @@ static func dprintd(s: String):
 # - GCM Graph Context Menu
 # - NCM Node Context Menu
 # - NOP Node Operations
+# - UIS UI Signals
 # - NSE Node Selection
 # - FEA Formal Editor Action Methods
 # - UME Utility Methods
@@ -81,6 +82,7 @@ var _del_hint_last_children: Dictionary = {}
 var _del_hint_last_parent: Dictionary = {}
 var _graph_subscribed := false
 var _pending_set_selected_nodes = null
+var _pending_inspect_node = null # Update-consumed BehNode to inspect.
 
 
 # === VMD Var Menu Entry Dictionaries ===
@@ -283,22 +285,38 @@ func _process(dt):
 	# This has to occur AFTER we may have added any new GraphNodes, but BEFORE
 	# we handle any selection logic that may fire signals.
 	subscribe_editor_node_signals()
-	# If this update created new editor nodes, we have to update again in case
-	# there are _pending_set_selected_nodes.
-	if _pending_set_selected_nodes != null && created_ed_node_ct > 0:
-		dprintd("[BehEditor] (BehEditorNode Sync) _pending_set_selected_nodes exists and we created GraphNodes this update. Requesting another _process occur after this one.")
-		_should_update = true
 	
 	# Update pending selected nodes.
 	# ------------------------------
 	#
-	# We CAN'T processing pending selected nodes until AFTER the Graph allows us
-	# to get selection callbacks from nodes. So the frame where we add a GraphNode to the
-	# GraphEdit, we have to wait an update.
-	if _pending_set_selected_nodes != null && created_ed_node_ct == 0:
+	# If this update created new editor nodes, we have to update again in case
+	# there are _pending_set_selected_nodes.
+	var can_set_pending_selection = true
+	if created_ed_node_ct > 0:
+		# Can't set pending selection if we just created editor nodes because we
+		# haven't subscribed to callbacks.
+		can_set_pending_selection = false
+	if _pending_inspect_node != null:
+		# Can't set pending selection if we're about to cause a refresh of the
+		# window due to selecting a node.
+		can_set_pending_selection = false
+	# If we want to set the selection but we can't, make sure we are getting another
+	# update.
+	if _pending_set_selected_nodes != null && !can_set_pending_selection:
+		dprintd("[BehEditor] (BehEditorNode Sync) _pending_set_selected_nodes exists and we created GraphNodes this update. Requesting another _process occur after this one.")
+		_should_update = true
+	# Finally, consume a pending selection if no other action is blocking it.
+	if _pending_set_selected_nodes != null && can_set_pending_selection:
 		dprintd("[BehEditor] (_pending_set_selected_nodes Sync) Consuming; setting selection to %s nodes from pending buffer." % len(_pending_set_selected_nodes))
 		set_selected_nodes(_pending_set_selected_nodes)
 		_pending_set_selected_nodes = null
+	
+	# Update pending inspect node.
+	# ----------------------------
+	#
+	if _pending_inspect_node != null:
+		inspect_node(_pending_inspect_node) # expects BehNode
+		_pending_inspect_node = null
 	
 	# Validate selected nodes
 	# -----------------------
@@ -845,7 +863,7 @@ func receive_node_target():
 	dbg_active_node_label.text = "Active Node: %s" % active_node.get_class()
 
 
-# === UI Signals ===
+# === UIS UI Signals ===
 
 
 func subscribe_panel_btn_signals():
@@ -890,6 +908,40 @@ func unsubscribe_graph_edit_signals():
 	graph.connection_request.disconnect(on_connection_request)
 	graph.disconnection_request.disconnect(on_disconnection_request)
 	_graph_subscribed = false
+
+
+func subscribe_editor_node_signals():
+	"""OK to call multiple times when editor nodes are created; tracks subscriptions and avoids
+	resubscribing."""
+	for id in _editor_node_map.keys():
+		var is_subscribed = _subscribed_editor_nodes.has(id)
+		if !is_subscribed:
+			var ed_node: BehEditorNode = _editor_node_map[id]
+			
+			ed_node.position_offset_changed.connect(on_editor_node_pos_changed)
+			ed_node.mouse_clicked.connect(on_ed_node_mouse_clicked)
+			ed_node.mouse_released_without_drag.connect(on_ed_node_mouse_released_without_drag)
+			_subscribed_editor_nodes[id] = [
+				["position_offset_changed", on_editor_node_pos_changed],
+				["mouse_clicked", on_ed_node_mouse_clicked],
+				["mouse_released_without_drag", on_ed_node_mouse_released_without_drag]
+			]
+	pass
+
+
+func unsubscribe_editor_node_signals():
+	"""Cleans up editor node signals. Call this before freeing editor nodes."""
+	for id in _editor_node_map.keys():
+		var is_subscribed = _subscribed_editor_nodes.has(id)
+		if is_subscribed:
+			var ed_node: BehEditorNode = _editor_node_map[id]
+			var signal_callable_pair_arr = _subscribed_editor_nodes[id]
+			for signal_callable_pair in signal_callable_pair_arr:
+				var signal_name = signal_callable_pair[0]
+				var callable = signal_callable_pair[1]
+				ed_node.disconnect(signal_name, callable)
+			_subscribed_editor_nodes.erase(id)
+	pass
 
 
 func on_delete_nodes_request(nodes = null):
@@ -1236,6 +1288,14 @@ func on_editor_node_pos_changed():
 
 
 func on_ed_node_mouse_clicked(ed_node: BehEditorNode):
+	"""Attached to BehEditorNode mouse_clicked event, FORMERLY used to Inspect a node."""
+	# Note: Moved Inspection trigger to when an editor node is released without dragging the node.
+	# That handler is just below.
+	pass
+
+
+func on_ed_node_mouse_released_without_drag(ed_node: BehEditorNode):
+	"""Attached to BehEditorNode mouse_released_without_drag event, used to Inspect a node."""
 	if ed_node == null:
 		push_error("[BehEditor] (on_ed_node_mouse_clicked) Got null ed_node.")
 		return
@@ -1252,9 +1312,10 @@ func on_ed_node_mouse_clicked(ed_node: BehEditorNode):
 			push_error("[BehEditor] (on_ed_node_mouse_clicked) Can't inspect null beh in ed_node %s" % ed_node)
 			return
 		dprintd("[BehEditor] (on_ed_node_mouse_clicked) Inspecting second-clicked beh %s" % beh)
-		inspect_node(beh)
+		_pending_inspect_node = beh
 		var set_sel: Array[BehNode] = [beh]
 		_pending_set_selected_nodes = set_sel
+		_should_update = true
 	pass
 
 
@@ -1651,38 +1712,6 @@ func _midaction_move_node(beh: BehNode, to_pos: Vector2):
 
 
 # === UME Utility Methods ===
-
-
-func subscribe_editor_node_signals():
-	"""OK to call multiple times when editor nodes are created; tracks subscriptions and avoids
-	resubscribing."""
-	for id in _editor_node_map.keys():
-		var is_subscribed = _subscribed_editor_nodes.has(id)
-		if !is_subscribed:
-			var ed_node: BehEditorNode = _editor_node_map[id]
-			
-			ed_node.position_offset_changed.connect(on_editor_node_pos_changed)
-			ed_node.mouse_clicked.connect(on_ed_node_mouse_clicked)
-			_subscribed_editor_nodes[id] = [
-				["position_offset_changed", on_editor_node_pos_changed],
-				["mouse_clicked", on_ed_node_mouse_clicked],
-			]
-	pass
-
-
-func unsubscribe_editor_node_signals():
-	"""Cleans up editor node signals. Call this before freeing editor nodes."""
-	for id in _editor_node_map.keys():
-		var is_subscribed = _subscribed_editor_nodes.has(id)
-		if is_subscribed:
-			var ed_node: BehEditorNode = _editor_node_map[id]
-			var signal_callable_pair_arr = _subscribed_editor_nodes[id]
-			for signal_callable_pair in signal_callable_pair_arr:
-				var signal_name = signal_callable_pair[0]
-				var callable = signal_callable_pair[1]
-				ed_node.disconnect(signal_name, callable)
-			_subscribed_editor_nodes.erase(id)
-	pass
 
 
 func get_editor_nodes() -> Array[BehEditorNode]:

@@ -155,6 +155,12 @@ func tick(dt: float, bb: Dictionary) -> BehConst.Status:
 	if override_tick_child != null:
 		return override_tick_child.tick(dt, bb)
 	
+	# TODO: Conditions should have a default "sticky" mode. If the condition runs a child
+	# and gets a "Busy" result from that child, the condition should tick the child again
+	# on its own next tick() WITHOUT running the condition again.
+	# "Mode: Sticky (skips check if child was busy)"
+	# "Mode: Rude (re-checks even if child was busy)"
+	
 	var expr_err_str = try_parse_expr_cached()
 	if expr_err_str != null:
 		push_error("[BehNodeACondition] (tick) Unable to evaluate expression; couldn't parse expr. %s" % [
