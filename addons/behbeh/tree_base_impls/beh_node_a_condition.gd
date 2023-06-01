@@ -17,6 +17,18 @@ extends BehNodeXMultiChildren
 enum DebugOverride { Off, ForceTrue, ForceFalse }
 @export var debug_override := DebugOverride.Off
 
+# Note: This logic works very similarly to BehNodeASelect's sticky-child logic.
+enum ChildBusyHandling { Sticky, Rude }
+## In Sticky mode, if a child returns Busy on a tick, then the next time this node
+## receives a tick, this node will skip condition logic and tick the formerly-busy child
+## again. Only once the busy child resolves or fails will the stickiness be cleared.
+## If the child fails, the other children will be ticked.
+##
+## In Rude mode, the condition logic runs identically every tick, even if a child returned busy.
+## This may prevent a child from being ticked again even if has in-progress "work" via the
+## busy signal.
+@export var child_busy_handling := ChildBusyHandling.Sticky
+
 
 const COLOR_CONNECTION_TRUTHY := Color.GREEN_YELLOW
 const COLOR_CONNECTION_FALSEY := Color.MEDIUM_VIOLET_RED
@@ -24,6 +36,8 @@ const COLOR_CONNECTION_FALSEY := Color.MEDIUM_VIOLET_RED
 
 var _parsed_expr_str = null
 var _parsed_expr = null
+var _sticky_busy_child = null
+var _ignore_failed_sticky_child = null # Sorry for this variable name
 
 
 # === Editor Overrides ===
@@ -161,6 +175,23 @@ func tick(dt: float, bb: Dictionary) -> BehConst.Status:
 	# "Mode: Sticky (skips check if child was busy)"
 	# "Mode: Rude (re-checks even if child was busy)"
 	
+	# (In Sticky mode) If a child reports Busy, that child should be ticked again
+	# until it doesn't report busy, circumventing the usual selection logic.
+	var tick_normally = true
+	if _sticky_busy_child != null:
+		# Tick the sticky child.
+		var res = _sticky_busy_child.tick(dt, bb)
+		if res == BehConst.Status.Failed:
+			# We need to tick the other children instead. Will tick "normally," but don't
+			# double-tick this first-attempt sticky child.
+			_ignore_failed_sticky_child = _sticky_busy_child
+			_sticky_busy_child = null
+		if res == BehConst.Status.Resolved:
+			_sticky_busy_child = null # Resolved child is no longer sticky.
+		else: # Child resolved or was busy; either way, return that status
+			tick_normally = false
+			return res
+	
 	var expr_err_str = try_parse_expr_cached()
 	if expr_err_str != null:
 		push_error("[BehNodeACondition] (tick) Unable to evaluate expression; couldn't parse expr. %s" % [
@@ -185,6 +216,8 @@ func tick(dt: float, bb: Dictionary) -> BehConst.Status:
 		if tick_child != null:
 			match tick_child.tick(dt, bb):
 				BehConst.Status.Busy:
+					if child_busy_handling == ChildBusyHandling.Sticky:
+						_sticky_busy_child = tick_child # Child was busy, will tick it again next.
 					return BehConst.Status.Busy
 			return BehConst.Status.Resolved
 		else:

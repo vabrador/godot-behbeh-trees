@@ -4,7 +4,7 @@ extends Control
 
 
 static func dprintd(s: String):
-#	dprintd(s) # Enable when debugging.
+#	print(s) # Enable when debugging.
 	pass
 
 
@@ -70,8 +70,6 @@ var _subscribed_editor_nodes: Dictionary = {} # maps beh stable_id -> [func_name
 var _selected_nodes: Dictionary = {} # maps BehEditorNode name -> bool (true) -- acts like a Set
 var _copy_nodes_buffer: Array[BehEditorNode] = []
 var _ctx_menu_node_id_pressed_subscribed = false
-var _pending_node_positions = {} # Used to place nodes that don't yet have stable_ids from saving.
-var _pending_parent_child_relations = [] # Used to parent nodes that don't yet have stable_ids from saving.
 var _dict_history_storage: Dictionary = {} # Storage to prevent garbage-collection of objects needed for Undo history.
 # Undo-buffer-like history that sadly is a small memory leak over many operations without looking
 # away from a single Beh editor view.
@@ -81,11 +79,14 @@ var _hint_last_editor_positions: Dictionary = {}
 var _del_hint_last_children: Dictionary = {}
 var _del_hint_last_parent: Dictionary = {}
 var _graph_subscribed := false
+var _pending_node_positions = {} # Used to place nodes that don't yet have stable_ids from saving.
+var _pending_parent_child_relations = [] # Used to parent nodes that don't yet have stable_ids from saving.
 var _pending_set_selected_nodes = null
 var _pending_inspect_node = null # Update-consumed BehNode to inspect.
 var _pending_scroll_offset = null
 var _pending_zoom = null
 var _created_ed_node_ct = null
+var _delay_pending_scroll_offset = 0
 
 
 # === VMD Var Menu Entry Dictionaries ===
@@ -165,17 +166,21 @@ func _process(dt):
 	# This needs to happen prior to updating BehNodeEditors, because the act of saving
 	# with the subresource_paths argument creates resource_paths for any newly-added
 	# subresources entries in the tree.
+	dprintd("[BehEditor] (Update) Saving active tree.")
 	save_active_tree()
 	
 	# Validate the tree.
 	# ------------------
 	#
 	# And save again if validation changed the tree.
+	dprintd("[BehEditor] (Update) Doing validation...")
 	if active_tree.validate_roots_and_orphans():
 		save_active_tree()
 	if active_tree.validate_single_parents():
 		save_active_tree()
+	dprintd("[BehEditor] (Update) Done validating.")
 	
+	dprintd("[BehEditor] (Update) Step: Process pending editor positions.")
 	# Process _pending_node_positions in case BehNodes want editor positions but didn't
 	# have stable_ids when they were spawned.
 	if len(_pending_node_positions) > 0:
@@ -203,6 +208,7 @@ func _process(dt):
 	# ------------------------------------------------------
 	#
 	# Ensure that every node in the active_tree has an editor node.
+	dprintd("[BehEditor] (Update) Step: Create/destroy editor nodes.")
 	update_create_destroy_editor_nodes()
 	
 	
@@ -211,38 +217,44 @@ func _process(dt):
 	#
 	# This has to occur AFTER we may have added any new GraphNodes, but BEFORE
 	# we handle any selection logic that may fire signals.
+	dprintd("[BehEditor] (Update) Step: subscribe_editor_node_signals.")
 	subscribe_editor_node_signals()
 	
 	# Update pending scroll offset.
 	# -----------------------------
 	#
 	# We don't set the scroll offset until after any pending node inspection is resolved.
-#	print("Pending scroll offset: %s" % _pending_scroll_offset)
-#	print("graph.scroll_offset BEFORE: %s" % graph.scroll_offset)
+#	dprintd("Pending scroll offset: %s" % _pending_scroll_offset)
+#	dprintd("graph.scroll_offset BEFORE: %s" % graph.scroll_offset)
 #	print("graph.zoom BEFORE: %s" % graph.zoom)
+	dprintd("[BehEditor] (Update) Step: Update pending scroll offset.")
 	var has_pending_view_info = _pending_zoom != null || _pending_scroll_offset != null
 	var can_set_view_info = true
 	# Wait until after editor nodes have stabilized to consume view info.
 	if _created_ed_node_ct > 0: can_set_view_info = false
 	if len(_pending_node_positions) > 0: can_set_view_info = false
+	if _delay_pending_scroll_offset > 0: # Delay used when switch active_tree selection.
+		_delay_pending_scroll_offset -= 1
+		can_set_view_info = false
 	# Consume pending view info.
 	if has_pending_view_info && can_set_view_info:
 #		print("CONSUMING PENDING VIEW INFO")
 #		graph.scroll_offset = _pending_scroll_offset
-		if _pending_scroll_offset != null:
-			graph.scroll_offset = _pending_scroll_offset
-			_pending_scroll_offset = null
 		if _pending_zoom != null:
 			graph.zoom = _pending_zoom
 			_pending_zoom = null
-#	print("graph.scroll_offset AFTER: %s" % graph.scroll_offset)
-#	print("graph.zoom AFTER: %s" % graph.zoom)
+		if _pending_scroll_offset != null:
+			graph.scroll_offset = _pending_scroll_offset
+			_pending_scroll_offset = null
+#	dprintd("graph.scroll_offset AFTER: %s" % graph.scroll_offset)
+#	dprintd("graph.zoom AFTER: %s" % graph.zoom)
 	
 	# Update pending selected nodes.
 	# ------------------------------
 	#
 	# If this update created new editor nodes, we have to update again in case
 	# there are _pending_set_selected_nodes.
+	dprintd("[BehEditor] (Update) Step: Update pending selected nodes.")
 	var can_set_pending_selection = true
 	if _created_ed_node_ct > 0:
 		# Can't set pending selection if we just created editor nodes because we
@@ -266,6 +278,7 @@ func _process(dt):
 	# Update pending inspect node.
 	# ----------------------------
 	#
+	dprintd("[BehEditor] (Update) Step: Update pending inspect node.")
 	if _pending_inspect_node != null:
 		inspect_node(_pending_inspect_node) # expects BehNode
 #		print("CALLED inspect_node !!")
@@ -273,6 +286,7 @@ func _process(dt):
 	
 	# Validate selected nodes
 	# -----------------------
+	dprintd("[BehEditor] (Update) Step: Validating selected nodes.")
 	for sel_key_name in _selected_nodes.keys():
 #		var sel_node = _selected_nodes[sel_key_name]
 		var sel_node = graph.get_node_or_null(sel_key_name)
@@ -280,8 +294,62 @@ func _process(dt):
 			push_warning("[BehEditor] (Validate Selected Nodes) Removing a null node from selection (deleted?)")
 			_selected_nodes.erase(sel_key_name)
 	
+	# Sort roots visually for the active_tree.
+	# ----------------------------------------
+	#
+	dprintd("[BehEditor] (Update) Step: Sorting active_tree roots visually.")
+	var did_sort_roots = false
+	var allow_root_sort = true
+	var root_and_positions_arr = []
+	for root in active_tree.roots:
+		var key = root.try_get_stable_id()
+		if key == null:
+			push_warning("[BehEditor] (Update - Sort Roots) Root %s lacked stable id, skipping sorting." % root)
+			allow_root_sort = false
+			break
+		if !_editor_node_map.has(key):
+			push_warning("[BehEditor] (Update - Sort Roots) Root %s lacked editor_node_map entry for key %s, aborting." % [
+				root, key])
+			allow_root_sort = false
+			break
+		if !active_tree.has_editor_offset(root):
+			push_warning("[BehEditor] (Update - Sort Roots) Root %s lacked editor offset, aborting." % [
+				root])
+			allow_root_sort = false
+			break
+		var root_pos = active_tree.get_editor_offset(root)
+		root_and_positions_arr.push_back([root, root_pos])
+	if allow_root_sort:
+		# Sort the roots based on their positions
+		root_and_positions_arr.sort_custom(func(a, b): 
+			# Returns true if B should come after A.
+			var a_pos = a[1]
+			var b_pos = b[1]
+			if a_pos.y < b_pos.y: return true # A higher than B: 	A -> B
+			if a_pos.y > b_pos.y: return false # A lower than B: 	B -> A
+			if a_pos.x < b_pos.x: return true # A left of B: 		A -> B
+			return false #											B -> A
+		)
+		# Use the sorted array to rearrange the tree roots.
+		# This assumes active_tree.roots is mutable and not a copy.
+		for c in range(len(root_and_positions_arr)):
+			var sorted_child = root_and_positions_arr[c][0]
+			var og_child = active_tree.roots[c]
+			if og_child != sorted_child:
+				did_sort_roots = true # A change is being made; will need to re-save and update.
+			active_tree.roots[c] = sorted_child # We just write the refs straight to the array.
+	if did_sort_roots:
+		_should_update = true
+		dprintd("[BehEditor] Tree's roots are now:")
+		for r in range(len(active_tree.roots)):
+			var root = active_tree.roots[r]
+			dprintd("[BehEditor] %s - %s" % [r, root])
+	# Done sorting active_tree roots.
+	
 	# Sort children visually for all behaviors.
 	# -----------------------------------------
+	#
+	dprintd("[BehEditor] (Update) Step: Sorting children visually.")
 	var children_resorted_ct = 0
 	for stab_id in _editor_node_map.keys():
 		var ed_node = _editor_node_map[stab_id]
@@ -338,6 +406,7 @@ func _process(dt):
 	# Update debug info.
 	# ------------------
 	#
+	dprintd("[BehEditor] (Update) Step: Updating debug info.")
 #	dbg_label_root_id.text = "Root Tree Count: %s" % len(active_tree.roots)
 #	dbg_label_orphan_ct.text = "Orphan Tree Count: %s" % len(active_tree.orphans)
 #	dbg_label_beh_ct.text = "Total Beh Count: %s" % len(active_tree.get_all_nodes())
@@ -385,17 +454,31 @@ func update_create_destroy_editor_nodes():
 				if !valid_beh:
 					push_warning("[BehEditor] Found INVALID beh in ed_node %s" % ed_node)
 					continue
+				if ed_node.beh != beh:
+					# This can occur if we've changed from one tree to another where nodes
+					# have matching stable_ids. For example, a tree has been duplicated, and we
+					# move from one selected tree to the other.
+					#
+					# In this case, we need to wait for the editor nodes to clear and be re-built. (?)
+					#
+					# So just break.
+					dprintd("[BehEditor] Detected stable_id mismatch, most likely from a active_tree moving from one active selection to a duplicate tree selection. Aborting sync update for now.")
+					break
 #				if !valid_beh:
 #					ed_node.set_title_color(BehEditorNode.RED)
 				# Update orphan status for editor nodes.
 				# Also update other visual state.
 				if valid_beh:
+					dprintd("[BehEditor] (BehEditorNode Sync) Updating editor node %s info for its beh %s" % [ed_node, ed_node.beh])
 					ed_node.beh._editor_ref = self
 					ed_node.is_orphan = active_tree.get_is_orphan(ed_node.beh)
 					var parent_beh = active_tree.get_parent_node(ed_node.beh)
-					var child_order_matters = parent_beh != null && parent_beh.get_does_child_order_matter()
+					var is_root = active_tree.get_is_root(ed_node.beh)
+					var child_order_matters = (parent_beh != null && parent_beh.get_does_child_order_matter()) \
+						|| is_root
 					ed_node.call_order_matters = child_order_matters
-					ed_node.child_index = active_tree.get_child_index(ed_node.beh)
+					ed_node.is_root = is_root
+					ed_node.child_index = active_tree.get_child_index(ed_node.beh, ed_node.is_root)
 				# Children connections.
 				for child_beh in ed_node.beh.get_children():
 					var child_id = child_beh.try_get_stable_id()
@@ -497,29 +580,99 @@ func create_ed_node_and_update_map(beh: BehNode, id: StringName):
 
 
 func save_active_tree():
-#	dprintd("[BehEditor] (Save) Saving...")
+	if !Engine.is_editor_hint():
+		# This is important because we look for .tres extensions for saving and at runtime those
+		# resources are optimized to .res binary extensions or otherwise messed-with
+		dprintd("[BehEditor] (save_active_tree) Skipping save, not in editor.")
+	dprintd("[BehEditor] (save_active_tree) Saving...")
 	if active_tree != null && active_tree.resource_path != "":
 #		dprintd("[BehEditor] Saving active_tree with FLAG_REPLACE_SUBRESOURCE_PATHS...")
-		var error = ResourceSaver.save(active_tree, "", ResourceSaver.FLAG_REPLACE_SUBRESOURCE_PATHS)
-		if error: push_error("[BehEditor] (save_active_tree) Error saving active_tree %s: %s" % [active_tree, error])
-#		else: dprintd("[BehEditor] Saved active_tree.")
-		var nodes_ct = 0
-		var nodes_lacking_resource_path_ct = 0
-#		var child_save_ct = 0
-		for child in active_tree.get_all_nodes():
-			if child.resource_path == "":
-				push_warning(("[BehEditor] (save_active_tree) Warning: BehNode (%s) lacks resource_path. " + \
-				".") % [
-					child.get_instance_id()])
-				nodes_lacking_resource_path_ct += 1
-			nodes_ct += 1
-#			if error: push_error("[BehEditor] (Save) Trying to save child with path: %s" % child.resource_path)
-#			error = ResourceSaver.save(child, child.resource_path, ResourceSaver.FLAG_REPLACE_SUBRESOURCE_PATHS)
-#			if error: push_error("[BehEditor] (Save) Error saving child %s: %s" % [child, error])
-#			else: child_save_ct += 1
-		if nodes_lacking_resource_path_ct == 0:
-			dprintd("[BehEditor] (save_active_tree) Saved %s nodes." % nodes_ct)
-			pass
+		dprintd("[BehEditor] (save_active_tree) active_tree resource_name is %s" % active_tree.resource_name)
+		dprintd("[BehEditor] (save_active_tree) active_tree resource_path is %s" % active_tree.resource_path)
+		
+		# Try to fix subtree saving. Can we save the resource WITHOUT the subresource paths flag?
+		#
+		# Get the path ending in .tres. This is the path to the base tree resource.
+		var attempt_normal_save = true
+		var path = active_tree.resource_path
+		var idx_of_tres_extension = path.find(".tres")
+		var idx_of_scene_extension = path.find(".tscn")
+		var base_tree_path = null
+		var is_saved_within_scene = false
+		if idx_of_tres_extension == -1:
+			dprintd("[BehEditor] (save_active_tree) Base tree must be inside a scene node; Failed to find .tres extension in active_tree resource_path: %s -- will attempt normal save." % active_tree.resource_path)
+			# Hope everything just works and try to save normally...
+			# This case definitely occurs when a tree is not defined on-disk and is attached to a
+			# scene instead
+			# Could detect this by finding .tscn but what do you do when
+			# your resource is a nested tree whose supertree is in a scene?
+			# 
+			# Might have to parse the resource format MORE to see if it's the FIRST
+			# tree resource (.tres OR .tscn::Resource_[\w]+$ == base tree?)
+		else:
+			base_tree_path = path.substr(0, idx_of_tres_extension + 5)
+			if !(base_tree_path.ends_with(".tres")):
+				push_error("[BehEditor] (save_active_tree) Failed to get base tree path ending in .tres: %s" % base_tree_path)
+				# Will attempt a normal save.
+			if base_tree_path == active_tree.resource_path:
+				# THIS active_tree is already the base tree on disk.
+				# Will just attempt a normal save.
+				pass
+			else:
+				# THIS active_tree is a CHILD tree of the base tree. Attempt a
+				# different save.
+				attempt_normal_save = false
+				# Try to save the base tree instead. Load the base tree.
+				var base_tree = ResourceLoader.load(base_tree_path)
+				if base_tree == null:
+					push_error("[BehEditor] (save_active_tree) Failed to perform special save of child tree by saving base tree. Failed to load base_tree from path: %s" % base_tree_path)
+				else:
+					# Got base_tree. Save it instead.
+					dprintd("[BehEditor] (save_active_tree) Attempting normal save of BASE tree at path %s, detected from child tree path %s." % [base_tree_path, active_tree.resource_path])
+					var error = ResourceSaver.save(base_tree, "", ResourceSaver.FLAG_REPLACE_SUBRESOURCE_PATHS)
+					if error: push_error("[BehEditor] (save_active_tree) Error saving base tree %s from base_tree_path %s: %s" % [base_tree, base_tree_path, error])
+		
+		if attempt_normal_save && idx_of_scene_extension != -1:
+			# The tree (base or otherwise) is part of a scene.
+			# We've modified the way stable_id's work and the user should always manually save
+			# any changes to a scene, so experimentally, let's just skip saving.
+			dprintd("[BehEditor] (save_active_tree) Skipping auto-save because the tree path %s looks like it's part of a scene." % [
+				path])
+			is_saved_within_scene = true
+			attempt_normal_save = false
+			
+		# Normal save process. Only known to work for base (non-nested) trees.
+		# Nested trees occur when a Subtree node is given a tree via "New BehTree" -- the tree only
+		# lives within a (base) BehTree -> BehNode -> BehTree reference chain.
+		if attempt_normal_save:
+			dprintd("[BehEditor] (save_active_tree) Attempting normal save of active_tree.")
+			var error = ResourceSaver.save(active_tree, "",
+				ResourceSaver.FLAG_REPLACE_SUBRESOURCE_PATHS
+			)
+			if error: push_error("[BehEditor] (save_active_tree) Error saving active_tree %s (path %s): %s" % [active_tree, active_tree.resource_path, error])
+	#		else: dprintd("[BehEditor] Saved active_tree.")
+		
+		# Scan nodes to ensure they have resource paths... but not if we're saved in a scene
+		if is_saved_within_scene:
+			dprintd("[BehEditor] (save_active_tree) Skipping child BehNode scan for resource_paths due to tree being part of a scene.")
+		else: # !is_saved_within_scene
+			var nodes_ct = 0
+			var nodes_lacking_resource_path_ct = 0
+	#		var child_save_ct = 0
+			for child in active_tree.get_all_nodes():
+				if child.resource_path == "":
+					push_warning(("[BehEditor] (save_active_tree) Warning: BehNode (%s) lacks resource_path. " + \
+					".") % [
+						child.get_instance_id()])
+					nodes_lacking_resource_path_ct += 1
+				nodes_ct += 1
+	#			if error: push_error("[BehEditor] (Save) Trying to save child with path: %s" % child.resource_path)
+	#			error = ResourceSaver.save(child, child.resource_path, ResourceSaver.FLAG_REPLACE_SUBRESOURCE_PATHS)
+	#			if error: push_error("[BehEditor] (Save) Error saving child %s: %s" % [child, error])
+	#			else: child_save_ct += 1
+			if nodes_lacking_resource_path_ct == 0:
+				dprintd("[BehEditor] (save_active_tree) Saved %s nodes." % nodes_ct)
+				pass
 #		if nodes_ct == child_save_ct:
 #			dprintd("[BehEditor] (Save) Success. All %s children were saved." % child_save_ct)
 #		else:
@@ -541,6 +694,11 @@ func notify_edit_target(target: Variant):
 	var is_new_tree_target = target == null || target is BehTree
 	if is_new_tree_target && active_tree != null: # Changing/clearing from an existing target
 		dprintd("[BehEditor] (notify_edit_target) Target is changing, had a target already (possibly save pending changes here)")
+		# Save the current active_tree before moving to the new tree target.
+		dprintd("[BehEditor] (notify_edit_target) active_tree is changing. Saving current tree before changing the target in case the new target is a newly-created inner tree that needs a resource path to be edited.")
+		save_active_tree()
+		# Clear any _pending state that will be invalid in the new tree view.
+		clear_tree_dependent_pending_state()
 	var og_active_tree = self.active_tree
 	if is_new_tree_target:
 		active_tree = target as BehTree
@@ -551,11 +709,25 @@ func notify_edit_target(target: Variant):
 			dprintd("[BehEditor] (notify_edit_target) CLEARING tree target. Removing old edit nodes & graph subscriptions")
 			clear_editor_nodes()
 			unsubscribe_graph_edit_signals()
-#	var is_changed_tree_target = target is BehTree && target != og_active_tree
 	if self.active_tree != null:
 		# If we have a valid active tree, make sure we are subscribed to graph edit signals.
 		unsubscribe_graph_edit_signals()
 		subscribe_graph_edit_signals()
+	var is_changed_tree_target = target is BehTree && target != og_active_tree
+	if is_changed_tree_target && self.active_tree != null:
+		# Reset the view offset to center on the first root if there is one.
+		if self.active_tree.has_roots():
+			var first_root = self.active_tree.roots[0]
+			if self.active_tree.has_editor_offset(first_root):
+				var first_root_offset = self.active_tree.get_editor_offset(first_root)
+				
+				_pending_scroll_offset = first_root_offset \
+					+ Vector2.LEFT * graph.size.x * 0.2 \
+					+ Vector2.UP * graph.size.y * 0.50
+#					+ Vector2.ZERO
+				_pending_zoom = 1.
+				_delay_pending_scroll_offset = 1
+				_should_update = true
 	
 			
 	var is_node_target = target is BehNode
@@ -571,6 +743,15 @@ func notify_edit_target(target: Variant):
 		dprintd("[BehEditor] (notify_edit_target) Got target that was not a node; resetting active_node.")
 		active_node = null
 	_should_update = true
+
+
+func clear_tree_dependent_pending_state():
+	_pending_node_positions = {}
+	_pending_parent_child_relations = []
+	_pending_set_selected_nodes = null
+	_pending_inspect_node = null
+	_pending_scroll_offset = null
+	_pending_zoom = null
 
 
 # === CTX Generic Context Menu Request Handler ===
@@ -992,10 +1173,12 @@ func subscribe_editor_node_signals():
 			ed_node.position_offset_changed.connect(on_editor_node_pos_changed)
 			ed_node.mouse_clicked.connect(on_ed_node_mouse_clicked)
 			ed_node.mouse_released_without_drag.connect(on_ed_node_mouse_released_without_drag)
+			ed_node.mouse_double_clicked.connect(on_ed_node_double_clicked)
 			_subscribed_editor_nodes[id] = [
 				["position_offset_changed", on_editor_node_pos_changed],
 				["mouse_clicked", on_ed_node_mouse_clicked],
-				["mouse_released_without_drag", on_ed_node_mouse_released_without_drag]
+				["mouse_released_without_drag", on_ed_node_mouse_released_without_drag],
+				["mouse_double_clicked", on_ed_node_double_clicked],
 			]
 	pass
 
@@ -1366,9 +1549,14 @@ func on_ed_node_mouse_clicked(ed_node: BehEditorNode):
 
 
 func on_ed_node_mouse_released_without_drag(ed_node: BehEditorNode):
+	"""Also formerly used to Inspect a node."""
+	# Note: Moved to double-click handler
+	pass
+
+func on_ed_node_double_clicked(ed_node: BehEditorNode):
 	"""Attached to BehEditorNode mouse_released_without_drag event, used to Inspect a node."""
 	if ed_node == null:
-		push_error("[BehEditor] (on_ed_node_mouse_clicked) Got null ed_node.")
+		push_error("[BehEditor] (on_ed_node_double_clicked) Got null ed_node.")
 		return
 	# If a SINGLE node is currently selected and we just got this event,
 	# open the node in the Inspector.
@@ -1380,9 +1568,9 @@ func on_ed_node_mouse_released_without_drag(ed_node: BehEditorNode):
 	if len(_selected_nodes) == 1 && did_click_on_single_selected_ed_node && !_expects_node_target:
 		var beh = ed_node.beh
 		if beh == null:
-			push_error("[BehEditor] (on_ed_node_mouse_clicked) Can't inspect null beh in ed_node %s" % ed_node)
+			push_error("[BehEditor] (on_ed_node_double_clicked) Can't inspect null beh in ed_node %s" % ed_node)
 			return
-		dprintd("[BehEditor] (on_ed_node_mouse_clicked) Inspecting second-clicked beh %s" % beh)
+		dprintd("[BehEditor] (on_ed_node_double_clicked) Inspecting double-clicked beh %s" % beh)
 		_pending_inspect_node = beh
 		var set_sel: Array[BehNode] = [beh]
 		_pending_set_selected_nodes = set_sel

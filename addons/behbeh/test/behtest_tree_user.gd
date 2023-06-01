@@ -1,4 +1,4 @@
-class_name TestTreeUser
+class_name BehTestTreeUser
 extends Node
 
 

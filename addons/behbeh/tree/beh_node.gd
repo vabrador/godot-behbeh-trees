@@ -145,20 +145,23 @@ func try_get_stable_id() -> Variant:
 		if new_stab_id == null:
 #			push_error("Failed to get stable ID!")
 			return null
-		self.resource_name = new_stab_id
+		self.resource_name = String(new_stab_id)
 	return StringName(self.resource_name)
 
 
 static func try_generate_stable_id(beh_node: BehNode) -> Variant:
 	"""Returns null or String. (Null only if failed.)"""
-	var og_path = beh_node.resource_path
-	if og_path == "":
-#		push_error("Can't generate a stable ID for beh_node %s; lacks resource_path" % beh_node.get_instance_id())
-		return null
-	var og_inst_id = beh_node.get_instance_id()
-	var stable_id = "BEHNODE__%s__%s" % [og_path, og_inst_id]
-	dprintd("[BehNode] Node inst %s generated stable id %s" % [beh_node.get_instance_id(), stable_id])
-	return stable_id
+	# Alternative: Use BehUuid to generate a "guaranteed" unique ID for this node
+	# that can be stable per-instance.
+	return BehUuid.gen_uuid_str()
+#	var og_path = beh_node.resource_path
+#	if og_path == "":
+##		push_error("Can't generate a stable ID for beh_node %s; lacks resource_path" % beh_node.get_instance_id())
+#		return null
+#	var og_inst_id = beh_node.get_instance_id()
+#	var stable_id = "BEHNODE__%s__%s" % [og_path, og_inst_id]
+#	dprintd("[BehNode] Node inst %s generated stable id %s" % [beh_node.get_instance_id(), stable_id])
+#	return stable_id
 
 
 func get_all_children(include_self: bool = true) -> Array[BehNode]:

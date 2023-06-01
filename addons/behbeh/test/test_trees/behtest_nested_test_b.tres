@@ -1,0 +1,37 @@
+[gd_resource type="Resource" script_class="BehTree" load_steps=8 format=3 uid="uid://c434ytl5sagc0"]
+
+[ext_resource type="Script" path="res://addons/behbeh/tree_builtin_impls/beh_node_b_debug_print.gd" id="1_l8u2t"]
+[ext_resource type="Script" path="res://addons/behbeh/tree_base_impls/beh_node_a_sequence.gd" id="2_8e7sv"]
+[ext_resource type="Script" path="res://addons/behbeh/tree_base_impls/beh_node_a_entry_point.gd" id="3_v3jrb"]
+[ext_resource type="Script" path="res://addons/behbeh/tree/beh_tree.gd" id="4_pwhoq"]
+
+[sub_resource type="Resource" id="Resource_16ltr"]
+resource_name = "BEHNODE__res://test_trees/nested_test_b.tres::Resource_16ltr__-9223367697025080854"
+script = ExtResource("1_l8u2t")
+msg = "Ticking ref-based tree B"
+
+[sub_resource type="Resource" id="Resource_np662"]
+resource_name = "BEHNODE__res://test_trees/nested_test_a.tres::Resource_np662__-9223369687037834039"
+script = ExtResource("2_8e7sv")
+children = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([SubResource("Resource_16ltr")])
+
+[sub_resource type="Resource" id="Resource_2a4b6"]
+resource_name = "BEHNODE__res://test_trees/nested_test_a.tres::Resource_2a4b6__-9223369738241897336"
+script = ExtResource("3_v3jrb")
+child = SubResource("Resource_np662")
+
+[resource]
+script = ExtResource("4_pwhoq")
+roots = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([SubResource("Resource_2a4b6")])
+orphans = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([])
+node_meta = {
+"BEHNODE__res://test_trees/nested_test_a.tres::Resource_2a4b6__-9223369738241897336": {
+"ed_offset": Vector2(800, 700)
+},
+"BEHNODE__res://test_trees/nested_test_a.tres::Resource_np662__-9223369687037834039": {
+"ed_offset": Vector2(1000, 700)
+},
+"BEHNODE__res://test_trees/nested_test_b.tres::Resource_16ltr__-9223367697025080854": {
+"ed_offset": Vector2(1220, 700)
+}
+}

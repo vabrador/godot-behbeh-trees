@@ -199,6 +199,7 @@ func add_node(node: BehNode):
 func _push_root(node: BehNode):
 	"""Adds a node to the roots list. Confirms that the node is not ALREADY in a root tree,
 	which would be an error."""
+	dprintd("[BehTree] Got _push_root: %s" % node)
 	var node_in_roots = find_node_in_roots(node)
 	if node_in_roots[0] != -1:
 		push_error("[BehTree] (_push_root) Node was already tracked by a root tree! Node: %s" % node)
@@ -224,6 +225,7 @@ func remove_node(node: BehNode) -> BehNode:
 	confirm_initialized()
 	var del_node = null
 	
+	dprintd("[BehTree] Got remove_node: %s" % node)
 	var found_in_roots = find_node_in_roots(node)
 	if found_in_roots[0] != -1:
 		# Remove from tree. This will create orphans if the node has children.
@@ -420,6 +422,7 @@ func find_node_in_orphans(node: BehNode, search_roots_only: bool = false) -> Arr
 func validate_roots_and_orphans() -> bool:
 	"""Confirms that orphans are not roots and roots are not orphans. If this validation
 	caused the tree to change its state, returns true."""
+	dprintd("[BehTree] validate_roots_and_orphans() called.")
 	confirm_initialized()
 	var changed_ct = 0
 	# Roots -> Orphans
@@ -460,6 +463,7 @@ func validate_single_parents() -> bool:
 	"""Confirms that every child has a single parent. If more than one parent is detected for a child,
 	a warning is pushed and the relationship is fixed (only the first detected parent retains
 	parenthood for a given child, and returns true. Returns false if no change was necessary."""
+	dprintd("[BehTree] validate_single_parents() called.")
 	confirm_initialized()
 	var changes = []
 #	var parent = {}
@@ -503,10 +507,15 @@ func validate_single_parents() -> bool:
 
 
 func get_is_orphan(node: BehNode):
+	dprintd("[BehTree] Got get_is_orphan: %s" % node)
 	var is_in_roots = find_node_in_roots(node)[0] != -1
 	var is_in_orphans = find_node_in_orphans(node)[0] != -1
 	if !is_in_roots && !is_in_orphans:
 		push_error("[BehTree] (get_is_orphan) Node is neither in roots nor orphans: %s" % node)
+		# This error is occurring at unknown times and contexts, so print a stack trace so we can
+		# dig on it when it happens again.
+		print("[BehTree] (get_is_orphan) For error, printing stack trace ...")
+		print_stack() # TODO: Determine how and when this function is called
 		return false
 	if is_in_roots && is_in_orphans:
 		push_error("[BehTree] (get_is_orphan) Invalid state: Node is in both roots and orphans: %s" % node)
@@ -519,9 +528,17 @@ func get_is_orphan(node: BehNode):
 	return false
 
 
-func get_child_index(node: BehNode):
+func get_is_root(node: BehNode) -> bool:
+	var node_in_roots = find_node_in_roots(node)
+	if node_in_roots[0] != -1 && node_in_roots[1] == null: # In root tree & no parent
+		return true
+	return false
+
+
+func get_child_index(node: BehNode, allow_root_tree_idx: bool = false):
 	"""Returns the index of the argument BehNode in its parent's children. Returns -1 if the node
-	is not tracked by this tree or if it has no parent."""
+	is not tracked by this tree or if it has no parent. Optionally, can return the root index
+	of a root if the passed node is a root, if allow_root_tree_idx is passed as true."""
 #	print("[BehTree] (get_child_index) Called for node %s." % node)
 	var parent = get_node_parent(node)
 	if parent != null:
@@ -533,6 +550,10 @@ func get_child_index(node: BehNode):
 			if child == node:
 #				print("[BehTree] (get_child_index) Match, will return %s" % c)
 				return c
+	if parent == null && allow_root_tree_idx:
+		var found_in_roots = find_node_in_roots(node) # [root_idx, parent_node, node]
+		if found_in_roots[0] != -1:
+			return found_in_roots[0] # Return root index if allow_root_tree_idx is passed.
 	return -1
 
 

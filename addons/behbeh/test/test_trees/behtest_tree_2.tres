@@ -1,0 +1,104 @@
+[gd_resource type="Resource" script_class="BehTree" load_steps=16 format=3 uid="uid://bdyarrl5mk8la"]
+
+[ext_resource type="Script" path="res://addons/behbeh/tree_builtin_impls/beh_node_b_debug_print.gd" id="1_1nu6r"]
+[ext_resource type="Script" path="res://addons/behbeh/tree_base_impls/beh_node_a_sequence.gd" id="1_diw81"]
+[ext_resource type="Script" path="res://addons/behbeh/tree/beh_tree.gd" id="1_h30ek"]
+[ext_resource type="Script" path="res://addons/behbeh/tree_base_impls/beh_node_a_condition.gd" id="1_nq25h"]
+[ext_resource type="Script" path="res://addons/behbeh/tree_base_impls/beh_node_a_entry_point.gd" id="1_ojf4a"]
+
+[sub_resource type="Resource" id="Resource_7o01j"]
+resource_name = "5d004ecc-6b50-42f8-b5de-463de9579e8d"
+script = ExtResource("1_1nu6r")
+msg = "Entry A: True"
+
+[sub_resource type="Resource" id="Resource_5yrg0"]
+resource_name = "0e1cfdb1-9529-4268-9735-de5b25cf1338"
+script = ExtResource("1_1nu6r")
+msg = "Entry A: False"
+
+[sub_resource type="Resource" id="Resource_qmw4m"]
+resource_name = "aff98585-5e50-4553-86d0-5407c11acd5d"
+script = ExtResource("1_nq25h")
+bb_key = ""
+equals_expr = ""
+invert = false
+debug_override = 1
+child_busy_handling = 0
+children = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([SubResource("Resource_7o01j"), SubResource("Resource_5yrg0")])
+
+[sub_resource type="Resource" id="Resource_rdwgt"]
+resource_name = "4e61556b-85ac-483e-9a5f-16274d0af7ef"
+script = ExtResource("1_diw81")
+children = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([SubResource("Resource_qmw4m")])
+
+[sub_resource type="Resource" id="Resource_ua1sh"]
+resource_name = "ed0eaef7-c949-4f77-93c4-d239fd0214e5"
+script = ExtResource("1_ojf4a")
+child = SubResource("Resource_rdwgt")
+
+[sub_resource type="Resource" id="Resource_jmpgh"]
+resource_name = "2f97db63-c0a8-4685-8eb8-c9c254ad6171"
+script = ExtResource("1_1nu6r")
+msg = "Entry B: True"
+
+[sub_resource type="Resource" id="Resource_pw5jj"]
+resource_name = "bd956a6c-4b67-4b4a-ae89-36f46e1214ed"
+script = ExtResource("1_1nu6r")
+msg = "Entry B: False"
+
+[sub_resource type="Resource" id="Resource_67b0n"]
+resource_name = "ded6e7c6-d6a9-4275-bbb0-61fa25b767ef"
+script = ExtResource("1_nq25h")
+bb_key = ""
+equals_expr = ""
+invert = false
+debug_override = 1
+child_busy_handling = 0
+children = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([SubResource("Resource_jmpgh"), SubResource("Resource_pw5jj")])
+
+[sub_resource type="Resource" id="Resource_u76vs"]
+resource_name = "83e4f669-653b-4252-b816-0efd92c5a180"
+script = ExtResource("1_diw81")
+children = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([SubResource("Resource_67b0n")])
+
+[sub_resource type="Resource" id="Resource_p7rku"]
+resource_name = "0e2c7d58-2f95-451e-ae5d-90add85618dc"
+script = ExtResource("1_ojf4a")
+child = SubResource("Resource_u76vs")
+
+[resource]
+script = ExtResource("1_h30ek")
+roots = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([SubResource("Resource_ua1sh"), SubResource("Resource_p7rku")])
+orphans = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([])
+node_meta = {
+"0e1cfdb1-9529-4268-9735-de5b25cf1338": {
+"ed_offset": Vector2(760, -200)
+},
+"0e2c7d58-2f95-451e-ae5d-90add85618dc": {
+"ed_offset": Vector2(200, 0)
+},
+"2f97db63-c0a8-4685-8eb8-c9c254ad6171": {
+"ed_offset": Vector2(760, -60)
+},
+"4e61556b-85ac-483e-9a5f-16274d0af7ef": {
+"ed_offset": Vector2(360, -260)
+},
+"5d004ecc-6b50-42f8-b5de-463de9579e8d": {
+"ed_offset": Vector2(760, -320)
+},
+"83e4f669-653b-4252-b816-0efd92c5a180": {
+"ed_offset": Vector2(360, 0)
+},
+"aff98585-5e50-4553-86d0-5407c11acd5d": {
+"ed_offset": Vector2(520, -260)
+},
+"bd956a6c-4b67-4b4a-ae89-36f46e1214ed": {
+"ed_offset": Vector2(760, 60)
+},
+"ded6e7c6-d6a9-4275-bbb0-61fa25b767ef": {
+"ed_offset": Vector2(520, 0)
+},
+"ed0eaef7-c949-4f77-93c4-d239fd0214e5": {
+"ed_offset": Vector2(200, -260)
+}
+}

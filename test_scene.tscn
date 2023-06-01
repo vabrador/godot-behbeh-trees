@@ -1,10 +1,125 @@
-[gd_scene load_steps=3 format=3 uid="uid://b06ucci8r4i4a"]
+[gd_scene load_steps=21 format=3 uid="uid://b06ucci8r4i4a"]
 
-[ext_resource type="Script" path="res://test_tree_user.gd" id="1_eubli"]
-[ext_resource type="Resource" uid="uid://cy2xpjvf1f7tb" path="res://test_trees/corvice_3.tres" id="2_3l7ta"]
+[ext_resource type="Script" path="res://addons/behbeh/test/behtest_tree_user.gd" id="1_ymjg2"]
+[ext_resource type="Script" path="res://addons/behbeh/tree_base_impls/beh_node_a_entry_point.gd" id="2_3si57"]
+[ext_resource type="Script" path="res://addons/behbeh/tree_base_impls/beh_node_a_sequence.gd" id="2_37fu2"]
+[ext_resource type="Script" path="res://addons/behbeh/tree_builtin_impls/beh_node_b_debug_print.gd" id="2_emmup"]
+[ext_resource type="Script" path="res://addons/behbeh/tree_base_impls/beh_node_a_sub_tree.gd" id="3_1rysi"]
+[ext_resource type="Script" path="res://addons/behbeh/tree/beh_tree.gd" id="3_ydqdi"]
+
+[sub_resource type="Resource" id="Resource_la6j3"]
+resource_name = "594fafe5-d329-46cb-9956-4127cf41ef86"
+script = ExtResource("2_emmup")
+msg = "Entry B Eval'd"
+
+[sub_resource type="Resource" id="Resource_j6n0c"]
+resource_name = "e5620672-97a8-4f76-bf6d-aaab25343c58"
+script = ExtResource("2_3si57")
+child = SubResource("Resource_la6j3")
+
+[sub_resource type="Resource" id="Resource_hhb0v"]
+resource_name = "5189603b-a0f6-4b92-b5c5-5559a9ad4c47"
+script = ExtResource("2_emmup")
+msg = "Start sequence: Scene BehTree + nested Subtree"
+
+[sub_resource type="Resource" id="Resource_yd5sl"]
+resource_name = "6f41a202-df06-4e6e-97f7-d28518202d8a"
+script = ExtResource("2_emmup")
+msg = "Hello from scene->tree->nested tree!"
+
+[sub_resource type="Resource" id="Resource_s3nv1"]
+resource_name = "3776bc8f-5639-4c3a-ad33-2e577ea31e34"
+script = ExtResource("2_37fu2")
+children = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([SubResource("Resource_yd5sl")])
+
+[sub_resource type="Resource" id="Resource_h3nl6"]
+resource_name = "985e9647-1565-4812-9d60-5b3962e08e36"
+script = ExtResource("2_3si57")
+child = SubResource("Resource_s3nv1")
+
+[sub_resource type="Resource" id="Resource_f84pd"]
+script = ExtResource("3_ydqdi")
+roots = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([SubResource("Resource_h3nl6")])
+orphans = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([])
+node_meta = {
+"3776bc8f-5639-4c3a-ad33-2e577ea31e34": {
+"ed_offset": Vector2(400, 0)
+},
+"6f41a202-df06-4e6e-97f7-d28518202d8a": {
+"ed_offset": Vector2(600, 0)
+},
+"985e9647-1565-4812-9d60-5b3962e08e36": {
+"ed_offset": Vector2(200, 0)
+}
+}
+
+[sub_resource type="Resource" id="Resource_1me1x"]
+resource_name = "e70b681d-43c4-4baf-8bc1-b36d43edb9d0"
+script = ExtResource("3_1rysi")
+subtree = SubResource("Resource_f84pd")
+label = ""
+
+[sub_resource type="Resource" id="Resource_cmifk"]
+resource_name = "3e102cec-92cf-414b-9abc-dfdaf79820ce"
+script = ExtResource("2_emmup")
+msg = "End sequence: Scene BehTree + nested Subtree"
+
+[sub_resource type="Resource" id="Resource_ha6rd"]
+resource_name = "386b80a6-d21e-430d-822b-b3e5e5290cda"
+script = ExtResource("2_37fu2")
+children = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([SubResource("Resource_hhb0v"), SubResource("Resource_1me1x"), SubResource("Resource_cmifk")])
+
+[sub_resource type="Resource" id="Resource_f8b8v"]
+resource_name = "BEHNODE__res://test_scene.tscn::Resource_f8b8v__-9223368262702537133"
+script = ExtResource("2_3si57")
+child = SubResource("Resource_ha6rd")
+
+[sub_resource type="Resource" id="Resource_3y1mn"]
+resource_name = "89af2213-3984-4fd5-a6ea-28cb38c7b491"
+script = ExtResource("2_emmup")
+msg = "Entry C Eval'd"
+
+[sub_resource type="Resource" id="Resource_y3jat"]
+resource_name = "c3b07224-723a-48a4-a144-397bd13dc819"
+script = ExtResource("2_3si57")
+child = SubResource("Resource_3y1mn")
+
+[sub_resource type="Resource" id="Resource_dyyrb"]
+script = ExtResource("3_ydqdi")
+roots = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([SubResource("Resource_j6n0c"), SubResource("Resource_f8b8v"), SubResource("Resource_y3jat")])
+orphans = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([])
+node_meta = {
+"386b80a6-d21e-430d-822b-b3e5e5290cda": {
+"ed_offset": Vector2(260, 100)
+},
+"3e102cec-92cf-414b-9abc-dfdaf79820ce": {
+"ed_offset": Vector2(460, 220)
+},
+"5189603b-a0f6-4b92-b5c5-5559a9ad4c47": {
+"ed_offset": Vector2(460, -20)
+},
+"594fafe5-d329-46cb-9956-4127cf41ef86": {
+"ed_offset": Vector2(260, 0)
+},
+"89af2213-3984-4fd5-a6ea-28cb38c7b491": {
+"ed_offset": Vector2(260, 200)
+},
+"BEHNODE__res://test_scene.tscn::Resource_f8b8v__-9223368262702537133": {
+"ed_offset": Vector2(100, 100)
+},
+"c3b07224-723a-48a4-a144-397bd13dc819": {
+"ed_offset": Vector2(100, 200)
+},
+"e5620672-97a8-4f76-bf6d-aaab25343c58": {
+"ed_offset": Vector2(100, 0)
+},
+"e70b681d-43c4-4baf-8bc1-b36d43edb9d0": {
+"ed_offset": Vector2(460, 100)
+}
+}
 
 [node name="test_scene" type="Node2D"]
 
 [node name="TestTreeUser" type="Node" parent="."]
-script = ExtResource("1_eubli")
-beh_tree = ExtResource("2_3l7ta")
+script = ExtResource("1_ymjg2")
+beh_tree = SubResource("Resource_dyyrb")

@@ -1,0 +1,96 @@
+[gd_resource type="Resource" script_class="BehTree" load_steps=17 format=3 uid="uid://bq3h5x64f3q40"]
+
+[ext_resource type="Script" path="res://addons/behbeh/tree_base_impls/beh_node_a_sub_tree.gd" id="1_53b14"]
+[ext_resource type="Script" path="res://addons/behbeh/tree_base_impls/beh_node_a_sequence.gd" id="1_buu2u"]
+[ext_resource type="Script" path="res://addons/behbeh/tree/beh_tree.gd" id="1_d5dpe"]
+[ext_resource type="Script" path="res://addons/behbeh/tree_builtin_impls/beh_node_b_debug_print.gd" id="1_r5beg"]
+[ext_resource type="Script" path="res://addons/behbeh/tree_base_impls/beh_node_a_entry_point.gd" id="1_yqas0"]
+[ext_resource type="Resource" uid="uid://c434ytl5sagc0" path="res://addons/behbeh/test/test_trees/behtest_nested_test_b.tres" id="2_3fnde"]
+
+[sub_resource type="Resource" id="Resource_mhfui"]
+resource_name = "BEHNODE__res://test_trees/nested_test_a.tres::Resource_mhfui__-9223367972674793370"
+script = ExtResource("1_r5beg")
+msg = "Top of top-level tree A"
+
+[sub_resource type="Resource" id="Resource_d3f7b"]
+resource_name = "BEHNODE__res://test_trees/nested_test_a.tres::Resource_d3f7b__-9223369639205990952"
+script = ExtResource("1_53b14")
+subtree = ExtResource("2_3fnde")
+label = "ref: nested_test_b"
+
+[sub_resource type="Resource" id="Resource_52a5x"]
+resource_name = "BEHNODE__res://test_trees/nested_test_a.tres::Resource_52a5x__-9223369350587542031"
+script = ExtResource("1_r5beg")
+msg = "Inner nested tree C ticked!"
+
+[sub_resource type="Resource" id="Resource_ve7j5"]
+resource_name = "cdc1c92e-2367-4bcc-8941-673d9c93c271"
+script = ExtResource("1_r5beg")
+msg = "And sequence second beh tick in nested tree C"
+
+[sub_resource type="Resource" id="Resource_82ejs"]
+resource_name = "BEHNODE__res://test_trees/nested_test_a.tres::Resource_82ejs__-9223369259856370228"
+script = ExtResource("1_buu2u")
+children = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([SubResource("Resource_52a5x"), SubResource("Resource_ve7j5")])
+
+[sub_resource type="Resource" id="Resource_im2an"]
+resource_name = "BEHNODE__res://test_trees/nested_test_a.tres::Resource_im2an__-9223369454438520653"
+script = ExtResource("1_yqas0")
+child = SubResource("Resource_82ejs")
+
+[sub_resource type="Resource" id="Resource_x2m2v"]
+script = ExtResource("1_d5dpe")
+roots = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([SubResource("Resource_im2an")])
+orphans = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([])
+node_meta = {
+"BEHNODE__res://test_trees/nested_test_a.tres::Resource_52a5x__-9223369350587542031": {
+"ed_offset": Vector2(200, -100)
+},
+"BEHNODE__res://test_trees/nested_test_a.tres::Resource_82ejs__-9223369259856370228": {
+"ed_offset": Vector2(0, 0)
+},
+"BEHNODE__res://test_trees/nested_test_a.tres::Resource_im2an__-9223369454438520653": {
+"ed_offset": Vector2(-200, 0)
+},
+"cdc1c92e-2367-4bcc-8941-673d9c93c271": {
+"ed_offset": Vector2(200, 80)
+}
+}
+
+[sub_resource type="Resource" id="Resource_0vtin"]
+resource_name = "BEHNODE__res://test_trees/nested_test_a.tres::Resource_0vtin__-9223367374248220258"
+script = ExtResource("1_53b14")
+subtree = SubResource("Resource_x2m2v")
+label = "inner: tree C"
+
+[sub_resource type="Resource" id="Resource_np662"]
+resource_name = "BEHNODE__res://test_trees/nested_test_a.tres::Resource_np662__-9223369687037834039"
+script = ExtResource("1_buu2u")
+children = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([SubResource("Resource_mhfui"), SubResource("Resource_d3f7b"), SubResource("Resource_0vtin")])
+
+[sub_resource type="Resource" id="Resource_2a4b6"]
+resource_name = "BEHNODE__res://test_trees/nested_test_a.tres::Resource_2a4b6__-9223369738241897336"
+script = ExtResource("1_yqas0")
+child = SubResource("Resource_np662")
+
+[resource]
+script = ExtResource("1_d5dpe")
+roots = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([SubResource("Resource_2a4b6")])
+orphans = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([])
+node_meta = {
+"BEHNODE__res://test_trees/nested_test_a.tres::Resource_0vtin__-9223367374248220258": {
+"ed_offset": Vector2(1200, 800)
+},
+"BEHNODE__res://test_trees/nested_test_a.tres::Resource_2a4b6__-9223369738241897336": {
+"ed_offset": Vector2(800, 700)
+},
+"BEHNODE__res://test_trees/nested_test_a.tres::Resource_d3f7b__-9223369639205990952": {
+"ed_offset": Vector2(1200, 700)
+},
+"BEHNODE__res://test_trees/nested_test_a.tres::Resource_mhfui__-9223367972674793370": {
+"ed_offset": Vector2(1200, 600)
+},
+"BEHNODE__res://test_trees/nested_test_a.tres::Resource_np662__-9223369687037834039": {
+"ed_offset": Vector2(1000, 700)
+}
+}

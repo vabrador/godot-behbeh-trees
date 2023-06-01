@@ -16,6 +16,7 @@ const COLOR_TITLE_DEBUG := Color.PLUM
 # todo delete
 ## This threshold is used to fire the "mouse_released_without_drag" event
 #const MOUSE_MOVEMENT_THRESHOLD_PX_INVALIDATE_INSPECT := 2
+const DELAY_THRESHOLD_DOUBLE_CLICK_MSEC := 400
 
 
 var beh: BehNode = null
@@ -30,18 +31,26 @@ var is_orphan: bool:
 	set(value):
 		if _is_orphan != value: _needs_update = true
 		_is_orphan = value
+var _is_root := false
+var is_root: bool:
+	get: return _is_root
+	set(value):
+		if _is_root != value: _needs_update = true
+		_is_root = value
 var dbg_label: Label = null
 var _mouse_inside := false
 var _is_click_in_progress := false
 var _prev_mouse_pos = null
 var _is_inspect_valid := true
+var _first_click_time = null
 
 
 # === Signals ===
 
 
 signal mouse_clicked(this_node: BehEditorNode)
-signal mouse_released_without_drag(this_node: BehEditorNode) # Use this to trigger inspection.
+signal mouse_released_without_drag(this_node: BehEditorNode)
+signal mouse_double_clicked(this_node: BehEditorNode) # Use THIS to trigger inspection.
 
 
 # === Godot Events ===
@@ -52,9 +61,8 @@ func _ready():
 	self.mouse_exited.connect(on_mouse_exited)
 
 #
-#func _draw():
-##	_needs_update = true
-##	update_view()
+func _draw():
+	_needs_update = true # Allows labels to change immediately
 
 
 func _enter_tree():
@@ -88,6 +96,14 @@ func _gui_input(event):
 			if _is_inspect_valid && _mouse_inside:
 				mouse_released_without_drag.emit(self)
 				dprintd("[BehEditorNode] (_gui_input release) release without drag emitted")
+				var click_time = Time.get_ticks_msec()
+				if _first_click_time != null:
+					var click_delay_ms = click_time - _first_click_time
+					if click_delay_ms > 0 && click_delay_ms < DELAY_THRESHOLD_DOUBLE_CLICK_MSEC:
+						mouse_double_clicked.emit(self)
+						dprintd("[BehEditorNode] (_gui_input release) double_click emitted")
+						print("DOUBLE CLICK")
+				_first_click_time = click_time
 			_is_click_in_progress = false
 	if event is InputEventMouseMotion:
 		# Allow an inspection event when the mouse is released after it hasn't moved.
@@ -187,7 +203,10 @@ func update_view():
 	
 	# Order label text for when the label is in a sequence.
 	if self.call_order_matters && self.child_index != -1:
-		order_label.text = "(Order: %s)" % self.child_index
+		if self.is_root: # Clarify order implies root call order.
+			order_label.text = "(Root Order: %s)" % self.child_index
+		else: # Normal order text.
+			order_label.text = "(Order: %s)" % self.child_index
 		order_label.show()
 	else:
 		order_label.text = ""

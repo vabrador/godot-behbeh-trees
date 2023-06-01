@@ -5,6 +5,7 @@ extends EditorPlugin
 var docked_beh_editor: BehTreeEditor = null
 var is_first_edit_focus := false
 var undo_redo: EditorUndoRedoManager = get_undo_redo()
+var _already_visible := false
 
 
 static func dprintd(s: String):
@@ -25,10 +26,7 @@ func _enter_tree():
 
 func _exit_tree():
 	dprintd("[BehBehPlugin] Exiting tree.")
-	docked_beh_editor.queue_free()
-	# INSPECTOR
-#	remove_inspector_plugin(inspector_plugin)
-#	inspector_plugin.queue_free()
+	docked_beh_editor.free()
 
 
 func _handles(obj: Object) -> bool:
@@ -61,9 +59,12 @@ func _handles(obj: Object) -> bool:
 func _make_visible(visible: bool):
 	dprintd("[BehBehPlugin] make_visible %s called." % visible)
 	if visible:
-		add_control_to_bottom_panel(docked_beh_editor, "BehBeh Tree Editor")
+		if !_already_visible:
+			add_control_to_bottom_panel(docked_beh_editor, "BehBeh Tree Editor")
+			_already_visible = true
 	else:
 		remove_control_from_bottom_panel(docked_beh_editor)
+		_already_visible = false
 
 
 func _edit(obj: Object):

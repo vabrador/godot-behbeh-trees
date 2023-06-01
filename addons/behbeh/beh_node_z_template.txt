@@ -3,7 +3,6 @@ class_name BehNodeZTemplate
 extends BehNode
 
 
-# Exports here.
 # @export var my_export := 0
 
 

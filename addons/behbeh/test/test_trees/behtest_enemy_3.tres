@@ -1,49 +1,49 @@
 [gd_resource type="Resource" script_class="BehTree" load_steps=44 format=3 uid="uid://cy2xpjvf1f7tb"]
 
-[ext_resource type="Script" path="res://addons/behbeh/tree_builtin_impls/beh_node_b_debug_print.gd" id="1_v3xr3"]
-[ext_resource type="Script" path="res://addons/behbeh/tree_builtin_impls/beh_node_b_select_random.gd" id="2_7uolx"]
-[ext_resource type="Script" path="res://addons/behbeh/tree_builtin_impls/beh_node_b_placeholder.gd" id="2_d0f77"]
-[ext_resource type="Script" path="res://addons/behbeh/tree_builtin_impls/beh_node_b_set_bb_value.gd" id="3_h3cs4"]
-[ext_resource type="Script" path="res://addons/behbeh/tree_base_impls/beh_node_a_sequence.gd" id="4_y0k7g"]
-[ext_resource type="Script" path="res://addons/behbeh/tree_base_impls/beh_node_a_set.gd" id="5_c1es6"]
-[ext_resource type="Script" path="res://addons/behbeh/tree_base_impls/beh_node_a_condition.gd" id="6_5a0ew"]
-[ext_resource type="Script" path="res://addons/behbeh/tree_base_impls/beh_node_a_select.gd" id="7_g8efq"]
-[ext_resource type="Script" path="res://addons/behbeh/tree_base_impls/beh_node_a_entry_point.gd" id="8_je7b4"]
-[ext_resource type="Script" path="res://addons/behbeh/tree/beh_tree.gd" id="9_h041s"]
+[ext_resource type="Script" path="res://addons/behbeh/tree_builtin_impls/beh_node_b_debug_print.gd" id="1_1v3am"]
+[ext_resource type="Script" path="res://addons/behbeh/tree_builtin_impls/beh_node_b_placeholder.gd" id="2_7a2r6"]
+[ext_resource type="Script" path="res://addons/behbeh/tree_builtin_impls/beh_node_b_set_bb_value.gd" id="3_t4rwg"]
+[ext_resource type="Script" path="res://addons/behbeh/tree_base_impls/beh_node_a_sequence.gd" id="4_dxfek"]
+[ext_resource type="Script" path="res://addons/behbeh/tree_base_impls/beh_node_a_set.gd" id="5_01oqc"]
+[ext_resource type="Script" path="res://addons/behbeh/tree_base_impls/beh_node_a_condition.gd" id="6_dgeru"]
+[ext_resource type="Script" path="res://addons/behbeh/tree_builtin_impls/beh_node_b_select_random.gd" id="7_4h2m6"]
+[ext_resource type="Script" path="res://addons/behbeh/tree_base_impls/beh_node_a_select.gd" id="8_g1wqb"]
+[ext_resource type="Script" path="res://addons/behbeh/tree_base_impls/beh_node_a_entry_point.gd" id="9_675ju"]
+[ext_resource type="Script" path="res://addons/behbeh/tree/beh_tree.gd" id="10_uc1v5"]
 
 [sub_resource type="Resource" id="Resource_vwm3y"]
 resource_name = "BEHNODE__res://corvice_2.tres::Resource_vwm3y__-9223367487427385992"
-script = ExtResource("1_v3xr3")
+script = ExtResource("1_1v3am")
 msg = "Idle behavior"
 
 [sub_resource type="Resource" id="Resource_u1fcn"]
 resource_name = "BEHNODE__res://corvice_2.tres::Resource_u1fcn__-9223367361447270858"
-script = ExtResource("1_v3xr3")
+script = ExtResource("1_1v3am")
 msg = "Hostile behavior"
 
 [sub_resource type="Resource" id="Resource_r5lpr"]
 resource_name = "BEHNODE__res://test_trees/corvice_3.tres::Resource_r5lpr__-9223369420011673565"
-script = ExtResource("1_v3xr3")
+script = ExtResource("1_1v3am")
 msg = "Melee peck"
 
 [sub_resource type="Resource" id="Resource_88ud3"]
 resource_name = "BEHNODE__res://test_trees/corvice_3.tres::Resource_88ud3__-9223366565284484923"
-script = ExtResource("1_v3xr3")
+script = ExtResource("1_1v3am")
 msg = "Ranged attack"
 
 [sub_resource type="Resource" id="Resource_1qlqf"]
 resource_name = "BEHNODE__res://test_trees/corvice_3.tres::Resource_1qlqf__-9223365129708443450"
-script = ExtResource("1_v3xr3")
+script = ExtResource("1_1v3am")
 msg = "Encircle"
 
 [sub_resource type="Resource" id="Resource_wpxev"]
 resource_name = "BEHNODE__res://test_trees/corvice_3.tres::Resource_wpxev__-9223349471113294232"
-script = ExtResource("1_v3xr3")
+script = ExtResource("1_1v3am")
 msg = "Fly to new position"
 
 [sub_resource type="Resource" id="Resource_o62jf"]
 resource_name = "BEHNODE__res://corvice_2.tres::Resource_o62jf__-9223362675151408117"
-script = ExtResource("2_d0f77")
+script = ExtResource("2_7a2r6")
 wait_ticks = 200
 print_msg = "Wander behavior (actor motion)"
 as_warning = false
@@ -54,32 +54,33 @@ print_finished = false
 
 [sub_resource type="Resource" id="Resource_np4w3"]
 resource_name = "BEHNODE__res://corvice_2.tres::Resource_np4w3__-9223367823022037474"
-script = ExtResource("3_h3cs4")
+script = ExtResource("3_t4rwg")
 bb_key = "aggro_target"
 to_val_expr = "\"some_target\""
 
 [sub_resource type="Resource" id="Resource_2g1v2"]
 resource_name = "BEHNODE__res://corvice_2.tres::Resource_2g1v2__-9223370026508029709"
-script = ExtResource("4_y0k7g")
+script = ExtResource("4_dxfek")
 children = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([SubResource("Resource_o62jf"), SubResource("Resource_np4w3")])
 
 [sub_resource type="Resource" id="Resource_keoqp"]
 resource_name = "BEHNODE__res://corvice_2.tres::Resource_keoqp__-9223357214654122261"
-script = ExtResource("5_c1es6")
+script = ExtResource("5_01oqc")
 children = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([SubResource("Resource_2g1v2")])
 
 [sub_resource type="Resource" id="Resource_gs8ar"]
 resource_name = "BEHNODE__res://corvice_2.tres::Resource_gs8ar__-9223357611233955792"
-script = ExtResource("6_5a0ew")
+script = ExtResource("6_dgeru")
 bb_key = "aggro_target"
 equals_expr = "\"\""
 invert = false
 debug_override = 0
+child_busy_handling = 0
 children = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([SubResource("Resource_keoqp")])
 
 [sub_resource type="Resource" id="Resource_pi8i0"]
 resource_name = "BEHNODE__res://corvice_2.tres::Resource_pi8i0__-9223370085530278129"
-script = ExtResource("2_d0f77")
+script = ExtResource("2_7a2r6")
 wait_ticks = 120
 print_msg = "AxialApproach"
 as_warning = false
@@ -90,7 +91,7 @@ print_finished = false
 
 [sub_resource type="Resource" id="Resource_5ajse"]
 resource_name = "BEHNODE__res://corvice_2.tres::Resource_5ajse__-9223368910990940197"
-script = ExtResource("2_d0f77")
+script = ExtResource("2_7a2r6")
 wait_ticks = 60
 print_msg = "generic animation peck_windup"
 as_warning = false
@@ -101,7 +102,7 @@ print_finished = false
 
 [sub_resource type="Resource" id="Resource_u01am"]
 resource_name = "BEHNODE__res://corvice_2.tres::Resource_u01am__-9223368869299558529"
-script = ExtResource("2_d0f77")
+script = ExtResource("2_7a2r6")
 wait_ticks = 0
 print_msg = "actor animation special1"
 as_warning = false
@@ -112,12 +113,12 @@ print_finished = false
 
 [sub_resource type="Resource" id="Resource_kv2qq"]
 resource_name = "BEHNODE__res://corvice_2.tres::Resource_kv2qq__-9223369134446679988"
-script = ExtResource("5_c1es6")
+script = ExtResource("5_01oqc")
 children = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([SubResource("Resource_5ajse"), SubResource("Resource_u01am")])
 
 [sub_resource type="Resource" id="Resource_s3afs"]
 resource_name = "BEHNODE__res://corvice_2.tres::Resource_s3afs__-9223364826611259786"
-script = ExtResource("2_d0f77")
+script = ExtResource("2_7a2r6")
 wait_ticks = 90
 print_msg = "Lunge"
 as_warning = false
@@ -128,7 +129,7 @@ print_finished = false
 
 [sub_resource type="Resource" id="Resource_lusmi"]
 resource_name = "BEHNODE__res://corvice_2.tres::Resource_lusmi__-9223364800002591800"
-script = ExtResource("2_d0f77")
+script = ExtResource("2_7a2r6")
 wait_ticks = 2
 print_msg = "Spawn attack missile"
 as_warning = false
@@ -139,7 +140,7 @@ print_finished = false
 
 [sub_resource type="Resource" id="Resource_n8cts"]
 resource_name = "BEHNODE__res://corvice_2.tres::Resource_n8cts__-9223364780843014261"
-script = ExtResource("2_d0f77")
+script = ExtResource("2_7a2r6")
 wait_ticks = 0
 print_msg = "actor animation special1"
 as_warning = false
@@ -150,22 +151,22 @@ print_finished = false
 
 [sub_resource type="Resource" id="Resource_vh4o6"]
 resource_name = "BEHNODE__res://corvice_2.tres::Resource_vh4o6__-9223369111663217652"
-script = ExtResource("5_c1es6")
+script = ExtResource("5_01oqc")
 children = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([SubResource("Resource_s3afs"), SubResource("Resource_lusmi"), SubResource("Resource_n8cts")])
 
 [sub_resource type="Resource" id="Resource_emnmn"]
 resource_name = "BEHNODE__res://corvice_2.tres::Resource_emnmn__-9223369397043665342"
-script = ExtResource("4_y0k7g")
+script = ExtResource("4_dxfek")
 children = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([SubResource("Resource_kv2qq"), SubResource("Resource_vh4o6")])
 
 [sub_resource type="Resource" id="Resource_x533n"]
 resource_name = "BEHNODE__res://test_trees/corvice_3.tres::Resource_x533n__-9223368625358833374"
-script = ExtResource("4_y0k7g")
+script = ExtResource("4_dxfek")
 children = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([SubResource("Resource_pi8i0"), SubResource("Resource_emnmn")])
 
 [sub_resource type="Resource" id="Resource_y53m1"]
 resource_name = "BEHNODE__res://test_trees/corvice_3.tres::Resource_y53m1__-9223365756589115902"
-script = ExtResource("2_d0f77")
+script = ExtResource("2_7a2r6")
 wait_ticks = 120
 print_msg = "(Ranged attack)"
 as_warning = false
@@ -176,12 +177,12 @@ print_finished = false
 
 [sub_resource type="Resource" id="Resource_res34"]
 resource_name = "BEHNODE__res://test_trees/corvice_3.tres::Resource_res34__-9223366669403887490"
-script = ExtResource("4_y0k7g")
+script = ExtResource("4_dxfek")
 children = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([SubResource("Resource_y53m1")])
 
 [sub_resource type="Resource" id="Resource_qewes"]
 resource_name = "BEHNODE__res://test_trees/corvice_3.tres::Resource_qewes__-9223365129725216445"
-script = ExtResource("2_d0f77")
+script = ExtResource("2_7a2r6")
 wait_ticks = 120
 print_msg = "(Encircle; move to a strategic place)"
 as_warning = false
@@ -192,12 +193,12 @@ print_finished = false
 
 [sub_resource type="Resource" id="Resource_5yngd"]
 resource_name = "BEHNODE__res://test_trees/corvice_3.tres::Resource_5yngd__-9223365129691666384"
-script = ExtResource("4_y0k7g")
+script = ExtResource("4_dxfek")
 children = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([SubResource("Resource_qewes")])
 
 [sub_resource type="Resource" id="Resource_oe3en"]
 resource_name = "BEHNODE__res://test_trees/corvice_3.tres::Resource_oe3en__-9223349471130071439"
-script = ExtResource("2_d0f77")
+script = ExtResource("2_7a2r6")
 wait_ticks = 120
 print_msg = "(Fly; move to a new position)"
 as_warning = false
@@ -208,45 +209,49 @@ print_finished = false
 
 [sub_resource type="Resource" id="Resource_orwsf"]
 resource_name = "BEHNODE__res://test_trees/corvice_3.tres::Resource_orwsf__-9223349471096515216"
-script = ExtResource("4_y0k7g")
+script = ExtResource("4_dxfek")
 children = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([SubResource("Resource_oe3en")])
 
 [sub_resource type="Resource" id="Resource_ld0pm"]
 resource_name = "BEHNODE__res://test_trees/corvice_3.tres::Resource_ld0pm__-9223369919519725837"
-script = ExtResource("2_7uolx")
+script = ExtResource("7_4h2m6")
+random_mode = 1
+weights = Array[float]([1.0, 1.0, 3.0, 1.0])
 children = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([SubResource("Resource_x533n"), SubResource("Resource_res34"), SubResource("Resource_5yngd"), SubResource("Resource_orwsf")])
 
 [sub_resource type="Resource" id="Resource_8ki6w"]
 resource_name = "BEHNODE__res://corvice_2.tres::Resource_8ki6w__-9223366368957503651"
-script = ExtResource("4_y0k7g")
+script = ExtResource("4_dxfek")
 children = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([SubResource("Resource_ld0pm")])
 
 [sub_resource type="Resource" id="Resource_eo4yj"]
 resource_name = "BEHNODE__res://corvice_2.tres::Resource_eo4yj__-9223357192541753541"
-script = ExtResource("5_c1es6")
+script = ExtResource("5_01oqc")
 children = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([SubResource("Resource_8ki6w")])
 
 [sub_resource type="Resource" id="Resource_ucrfy"]
 resource_name = "BEHNODE__res://corvice_2.tres::Resource_ucrfy__-9223357435375177964"
-script = ExtResource("6_5a0ew")
+script = ExtResource("6_dgeru")
 bb_key = "aggro_target"
 equals_expr = "\"\""
 invert = true
 debug_override = 0
+child_busy_handling = 0
 children = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([SubResource("Resource_eo4yj")])
 
 [sub_resource type="Resource" id="Resource_fuin4"]
 resource_name = "BEHNODE__res://corvice_2.tres::Resource_fuin4__-9223357653697087648"
-script = ExtResource("7_g8efq")
+script = ExtResource("8_g1wqb")
+child_busy_handling = 0
 children = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([SubResource("Resource_gs8ar"), SubResource("Resource_ucrfy")])
 
 [sub_resource type="Resource" id="Resource_s8p1u"]
 resource_name = "BEHNODE__res://corvice_2.tres::Resource_s8p1u__-9223357693240985828"
-script = ExtResource("8_je7b4")
+script = ExtResource("9_675ju")
 child = SubResource("Resource_fuin4")
 
 [resource]
-script = ExtResource("9_h041s")
+script = ExtResource("10_uc1v5")
 roots = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([SubResource("Resource_s8p1u")])
 orphans = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([SubResource("Resource_vwm3y"), SubResource("Resource_u1fcn"), SubResource("Resource_r5lpr"), SubResource("Resource_88ud3"), SubResource("Resource_1qlqf"), SubResource("Resource_wpxev")])
 node_meta = {
@@ -254,13 +259,13 @@ node_meta = {
 "ed_offset": Vector2(900, 460)
 },
 "BEHNODE__res://corvice_2.tres::Resource_5ajse__-9223368910990940197": {
-"ed_offset": Vector2(2420, 40)
+"ed_offset": Vector2(2480, 60)
 },
 "BEHNODE__res://corvice_2.tres::Resource_8ki6w__-9223366368957503651": {
 "ed_offset": Vector2(900, 820)
 },
 "BEHNODE__res://corvice_2.tres::Resource_emnmn__-9223369397043665342": {
-"ed_offset": Vector2(1980, 260)
+"ed_offset": Vector2(2040, 260)
 },
 "BEHNODE__res://corvice_2.tres::Resource_eo4yj__-9223357192541753541": {
 "ed_offset": Vector2(800, 820)
@@ -275,13 +280,13 @@ node_meta = {
 "ed_offset": Vector2(800, 460)
 },
 "BEHNODE__res://corvice_2.tres::Resource_kv2qq__-9223369134446679988": {
-"ed_offset": Vector2(2200, 120)
+"ed_offset": Vector2(2260, 120)
 },
 "BEHNODE__res://corvice_2.tres::Resource_lusmi__-9223364800002591800": {
-"ed_offset": Vector2(2420, 400)
+"ed_offset": Vector2(2480, 400)
 },
 "BEHNODE__res://corvice_2.tres::Resource_n8cts__-9223364780843014261": {
-"ed_offset": Vector2(2420, 500)
+"ed_offset": Vector2(2480, 500)
 },
 "BEHNODE__res://corvice_2.tres::Resource_np4w3__-9223367823022037474": {
 "ed_offset": Vector2(1120, 520)
@@ -290,16 +295,16 @@ node_meta = {
 "ed_offset": Vector2(1120, 380)
 },
 "BEHNODE__res://corvice_2.tres::Resource_pi8i0__-9223370085530278129": {
-"ed_offset": Vector2(2420, -120)
+"ed_offset": Vector2(2480, -100)
 },
 "BEHNODE__res://corvice_2.tres::Resource_s3afs__-9223364826611259786": {
-"ed_offset": Vector2(2420, 300)
+"ed_offset": Vector2(2480, 300)
 },
 "BEHNODE__res://corvice_2.tres::Resource_s8p1u__-9223357693240985828": {
 "ed_offset": Vector2(60, 640)
 },
 "BEHNODE__res://corvice_2.tres::Resource_u01am__-9223368869299558529": {
-"ed_offset": Vector2(2420, 160)
+"ed_offset": Vector2(2480, 180)
 },
 "BEHNODE__res://corvice_2.tres::Resource_u1fcn__-9223367361447270858": {
 "ed_offset": Vector2(560, 740)
@@ -308,7 +313,7 @@ node_meta = {
 "ed_offset": Vector2(560, 820)
 },
 "BEHNODE__res://corvice_2.tres::Resource_vh4o6__-9223369111663217652": {
-"ed_offset": Vector2(2200, 400)
+"ed_offset": Vector2(2260, 400)
 },
 "BEHNODE__res://corvice_2.tres::Resource_vwm3y__-9223367487427385992": {
 "ed_offset": Vector2(560, 380)
@@ -317,16 +322,16 @@ node_meta = {
 "ed_offset": Vector2(0, 0)
 },
 "BEHNODE__res://test_trees/corvice_3.tres::Resource_1qlqf__-9223365129708443450": {
-"ed_offset": Vector2(1760, 1080)
+"ed_offset": Vector2(1800, 1080)
 },
 "BEHNODE__res://test_trees/corvice_3.tres::Resource_5yngd__-9223365129691666384": {
-"ed_offset": Vector2(1760, 1160)
+"ed_offset": Vector2(1800, 1160)
 },
 "BEHNODE__res://test_trees/corvice_3.tres::Resource_74q8q__-9223365314056493727": {
 "ed_offset": Vector2(0, 0)
 },
 "BEHNODE__res://test_trees/corvice_3.tres::Resource_88ud3__-9223366565284484923": {
-"ed_offset": Vector2(1760, 740)
+"ed_offset": Vector2(1800, 740)
 },
 "BEHNODE__res://test_trees/corvice_3.tres::Resource_avj00__-9223365314073270090": {
 "ed_offset": Vector2(0, 0)
@@ -335,27 +340,27 @@ node_meta = {
 "ed_offset": Vector2(1400, 820)
 },
 "BEHNODE__res://test_trees/corvice_3.tres::Resource_oe3en__-9223349471130071439": {
-"ed_offset": Vector2(2040, 1500)
+"ed_offset": Vector2(2080, 1500)
 },
 "BEHNODE__res://test_trees/corvice_3.tres::Resource_orwsf__-9223349471096515216": {
-"ed_offset": Vector2(1760, 1500)
+"ed_offset": Vector2(1800, 1500)
 },
 "BEHNODE__res://test_trees/corvice_3.tres::Resource_qewes__-9223365129725216445": {
-"ed_offset": Vector2(2040, 1160)
+"ed_offset": Vector2(2080, 1160)
 },
 "BEHNODE__res://test_trees/corvice_3.tres::Resource_r5lpr__-9223369420011673565": {
-"ed_offset": Vector2(1740, 100)
+"ed_offset": Vector2(1800, 100)
 },
 "BEHNODE__res://test_trees/corvice_3.tres::Resource_res34__-9223366669403887490": {
-"ed_offset": Vector2(1760, 820)
+"ed_offset": Vector2(1800, 820)
 },
 "BEHNODE__res://test_trees/corvice_3.tres::Resource_wpxev__-9223349471113294232": {
-"ed_offset": Vector2(1760, 1420)
+"ed_offset": Vector2(1800, 1420)
 },
 "BEHNODE__res://test_trees/corvice_3.tres::Resource_x533n__-9223368625358833374": {
-"ed_offset": Vector2(1740, 180)
+"ed_offset": Vector2(1800, 180)
 },
 "BEHNODE__res://test_trees/corvice_3.tres::Resource_y53m1__-9223365756589115902": {
-"ed_offset": Vector2(2040, 820)
+"ed_offset": Vector2(2080, 820)
 }
 }

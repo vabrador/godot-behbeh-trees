@@ -1,105 +1,109 @@
 [gd_resource type="Resource" script_class="BehTree" load_steps=24 format=3 uid="uid://cndxlqm6b0ew2"]
 
-[ext_resource type="Script" path="res://addons/behbeh/tree_base_impls/beh_node_a_entry_point.gd" id="1_3m58s"]
-[ext_resource type="Script" path="res://addons/behbeh/tree_builtin_impls/beh_node_b_debug_print.gd" id="1_7u7jn"]
-[ext_resource type="Script" path="res://addons/behbeh/tree/beh_tree.gd" id="1_g07hm"]
-[ext_resource type="Script" path="res://addons/behbeh/tree_base_impls/beh_node_a_sequence.gd" id="1_ghsef"]
-[ext_resource type="Script" path="res://addons/behbeh/tree_base_impls/beh_node_a_condition.gd" id="1_k88j3"]
-[ext_resource type="Script" path="res://addons/behbeh/tree_base_impls/beh_node_a_set.gd" id="2_0v5ww"]
-[ext_resource type="Script" path="res://addons/behbeh/tree_builtin_impls/beh_node_b_set_bb_value.gd" id="3_17w5i"]
-[ext_resource type="Script" path="res://addons/behbeh/tree_base_impls/beh_node_a_select.gd" id="7_f22uv"]
+[ext_resource type="Script" path="res://addons/behbeh/tree_builtin_impls/beh_node_b_debug_print.gd" id="1_stm6e"]
+[ext_resource type="Script" path="res://addons/behbeh/tree_builtin_impls/beh_node_b_set_bb_value.gd" id="2_e8l27"]
+[ext_resource type="Script" path="res://addons/behbeh/tree_base_impls/beh_node_a_set.gd" id="3_h1fc2"]
+[ext_resource type="Script" path="res://addons/behbeh/tree_base_impls/beh_node_a_condition.gd" id="4_acb3i"]
+[ext_resource type="Script" path="res://addons/behbeh/tree_base_impls/beh_node_a_sequence.gd" id="5_g43ro"]
+[ext_resource type="Script" path="res://addons/behbeh/tree_base_impls/beh_node_a_select.gd" id="6_r4gmo"]
+[ext_resource type="Script" path="res://addons/behbeh/tree_base_impls/beh_node_a_entry_point.gd" id="7_iaag3"]
+[ext_resource type="Script" path="res://addons/behbeh/tree/beh_tree.gd" id="8_ufg16"]
 
 [sub_resource type="Resource" id="Resource_po6sg"]
 resource_name = "BEHNODE__res://corvice_1.tres::Resource_po6sg__-9223354081475392065"
-script = ExtResource("1_7u7jn")
+script = ExtResource("1_stm6e")
 msg = "State is wander!"
 
 [sub_resource type="Resource" id="Resource_y7ky4"]
 resource_name = "BEHNODE__res://corvice_1.tres::Resource_y7ky4__-9223363189440171242"
-script = ExtResource("1_7u7jn")
+script = ExtResource("1_stm6e")
 msg = "Setting found_player to true"
 
 [sub_resource type="Resource" id="Resource_fnsod"]
 resource_name = "BEHNODE__res://corvice_1.tres::Resource_fnsod__-9223364998829363287"
-script = ExtResource("3_17w5i")
+script = ExtResource("2_e8l27")
 bb_key = "found_player"
 to_val_expr = "true"
 
 [sub_resource type="Resource" id="Resource_ejrry"]
 resource_name = "BEHNODE__res://corvice_1.tres::Resource_ejrry__-9223363584761731675"
-script = ExtResource("2_0v5ww")
+script = ExtResource("3_h1fc2")
 children = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([SubResource("Resource_y7ky4"), SubResource("Resource_fnsod")])
 
 [sub_resource type="Resource" id="Resource_qvb3w"]
 resource_name = "BEHNODE__res://corvice_1.tres::Resource_qvb3w__-9223362757963731040"
-script = ExtResource("1_7u7jn")
+script = ExtResource("1_stm6e")
 msg = "Setting state to aggro"
 
 [sub_resource type="Resource" id="Resource_bka3h"]
 resource_name = "BEHNODE__res://corvice_1.tres::Resource_bka3h__-9223362757980508066"
-script = ExtResource("3_17w5i")
+script = ExtResource("2_e8l27")
 bb_key = "state"
 to_val_expr = "\"aggro\""
 
 [sub_resource type="Resource" id="Resource_y8xyu"]
 resource_name = "BEHNODE__res://corvice_1.tres::Resource_y8xyu__-9223362757946953403"
-script = ExtResource("2_0v5ww")
+script = ExtResource("3_h1fc2")
 children = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([SubResource("Resource_qvb3w"), SubResource("Resource_bka3h")])
 
 [sub_resource type="Resource" id="Resource_2ocpp"]
 resource_name = "BEHNODE__res://corvice_1.tres::Resource_2ocpp__-9223369540975400748"
-script = ExtResource("1_k88j3")
+script = ExtResource("4_acb3i")
 bb_key = "found_player"
 equals_expr = "false"
 invert = false
 debug_override = 0
+child_busy_handling = 0
 children = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([SubResource("Resource_ejrry"), SubResource("Resource_y8xyu")])
 
 [sub_resource type="Resource" id="Resource_b0r8p"]
 resource_name = "BEHNODE__res://corvice_1.tres::Resource_b0r8p__-9223340304763809783"
-script = ExtResource("1_ghsef")
+script = ExtResource("5_g43ro")
 children = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([SubResource("Resource_po6sg"), SubResource("Resource_2ocpp")])
 
 [sub_resource type="Resource" id="Resource_bng20"]
 resource_name = "BEHNODE__res://corvice_1.tres::Resource_bng20__-9223364645668972266"
-script = ExtResource("1_k88j3")
+script = ExtResource("4_acb3i")
 bb_key = "state"
 equals_expr = "\"wander\""
 invert = false
 debug_override = 0
+child_busy_handling = 0
 children = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([SubResource("Resource_b0r8p")])
 
 [sub_resource type="Resource" id="Resource_0w0ht"]
 resource_name = "BEHNODE__res://corvice_1.tres::Resource_0w0ht__-9223340739713134282"
-script = ExtResource("1_7u7jn")
+script = ExtResource("1_stm6e")
 msg = "State is aggro!"
 
 [sub_resource type="Resource" id="Resource_uju2x"]
 resource_name = "BEHNODE__res://corvice_1.tres::Resource_uju2x__-9223340739696441313"
-script = ExtResource("2_0v5ww")
+script = ExtResource("3_h1fc2")
 children = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([SubResource("Resource_0w0ht")])
 
 [sub_resource type="Resource" id="Resource_m68ok"]
 resource_name = "BEHNODE__res://corvice_1.tres::Resource_m68ok__-9223350086199613810"
-script = ExtResource("1_k88j3")
+script = ExtResource("4_acb3i")
 bb_key = "state"
 equals_expr = "\"aggro\""
 invert = false
 debug_override = 0
+child_busy_handling = 0
 children = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([SubResource("Resource_uju2x")])
 
 [sub_resource type="Resource" id="Resource_vdklp"]
 resource_name = "BEHNODE__res://corvice_1.tres::Resource_vdklp__-9223369748190796014"
-script = ExtResource("7_f22uv")
+script = ExtResource("6_r4gmo")
+child_busy_handling = 0
 children = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([SubResource("Resource_bng20"), SubResource("Resource_m68ok")])
 
 [sub_resource type="Resource" id="Resource_7xxb7"]
 resource_name = "BEHNODE__res://corvice_1.tres::Resource_7xxb7__-9223368029901876920"
-script = ExtResource("1_3m58s")
+script = ExtResource("7_iaag3")
 child = SubResource("Resource_vdklp")
 
 [resource]
-script = ExtResource("1_g07hm")
+script = ExtResource("8_ufg16")
 roots = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([SubResource("Resource_7xxb7")])
 orphans = Array[Resource("res://addons/behbeh/tree/beh_node.gd")]([])
 node_meta = {
