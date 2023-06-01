@@ -30,6 +30,8 @@ I like being able to edit and author trees visually. I couldn't find a Behavior 
 - Inspect a BehTree to open the BehTree Editor in the bottom dock.
 - Right-click on the graph to add a new BehNode.
 - Double-click a BehNode in a BehTree to inspect it and edit any @exported variables.
+- Delete nodes by selecting or drag-selecting an hitting the Delete key.
+- Undo/redo is supported. If you encounter errors please file an Issue!
 - Customize your BehNodes' editor appearances by overriding `editor_` methods defined in BehNode (see: `tree/beh_node.gd`).
 
 
