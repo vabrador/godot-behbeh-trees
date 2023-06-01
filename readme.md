@@ -1,6 +1,8 @@
 # BehBeh Trees
 A flavor of Behavior Trees for Godot 4 featuring a GraphEdit-based editor.
 
+![screenshot of BehBeh Trees](example_tree_screenshots/Screenshot_2023-05-26_173006.png)
+
 ### TLDR
 - BehTrees contain BehNodes. Both are Resources.
 - tick() BehTrees.
