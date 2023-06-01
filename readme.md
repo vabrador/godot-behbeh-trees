@@ -3,8 +3,10 @@ A flavor of Behavior Trees for Godot 4 featuring a GraphEdit-based editor.
 
 ![screenshot of BehBeh Trees](doc/Screenshot_2023-05-26_173006.png)
 
+
 ## Why?
 I like being able to edit and author trees visually. I couldn't find a Behavior Tree solution for Godot 4 that used GraphEdit.
+
 
 ## TLDR
 - Please evaluate in isolation first. Tool has only recently stabilized and may have dragons lurking.
@@ -23,11 +25,13 @@ I like being able to edit and author trees visually. I couldn't find a Behavior 
   - Performance has NOT been evaluated. Production use is currently just beginning. 1.0 indicates the tool has been stable through testing, but in-game performance is still to be determined, and the current intended use is for smaller projects that are unlikely to encounter performance issues.
   - After defining a new BehNode @tool, you likely need to Reload the project (Project -> Reload Current Project) to avoid issues with the add-node resource picker.
 
+
 ## Using the Editor
 - Inspect a BehTree to open the BehTree Editor in the bottom dock.
 - Right-click on the graph to add a new BehNode.
 - Double-click a BehNode in a BehTree to inspect it and edit any @exported variables.
 - Customize your BehNodes' editor appearances by overriding `editor_` methods defined in BehNode (see: `tree/beh_node.gd`).
+
 
 ## Useful meta-nodes
 - `Sequence`: Supports N children, ticking one at a time, in order. Once a child is ticked, the sequence waits until re-ticking (this behavior might change in a major version revision).
@@ -46,12 +50,26 @@ A base class `BehNodeXMultiChildren` is used by nodes that can have children. Se
 
 Incorrectly implementing node children can break the tree. Fun!
 
-### Debug logging
+
+## Naming
+I'm a sucker for alphabetical sorting. I hope this naming scheme doesn't drive you mad.
+
+- `BehNodeAFooBar` - class_name pattern for top-level, general-purpose, built-in BehNode implementors.
+- `BehNodeBFooBar` - class_name pattern for built-in BehNodes that are more use-case specific.
+- `BehNodeCFooBar` - class_name pattern that is unused, but that in theory, would be used for game-specific implementors.
+- `BehNodeXFooBar` - class_name pattern for base classes intended for inheritance but not direct usage.
+
+I find this pattern useful when managing a large collection of Resource implemenations in a resource picker.
+
+
+## Debugging
 VERY verbose, but useful, log printing can be enabled in `beh_editor.gd`.`dprintd(s: String)`. (What can I say; Godot's editor tool debugging support is somewhat lackluster).
+  
   
 ## License
 
 Dual-licensed under MIT & Apache 2.0.
+
 
 ## Alternatives
 - Consider [beehave](https://github.com/bitbrain/beehave), which offers `Node`-based (rather than `Resource`+Editor-based) behavior trees.
