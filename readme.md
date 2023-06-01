@@ -17,6 +17,7 @@ A flavor of Behavior Trees for Godot 4 featuring a GraphEdit-based editor.
   - **Do not share tree references across multiple Node runners** and expect sensible behavior.
 	- `bb` is supposed to be the sole source of state, but this is not true in reality currently, due to Select / Sequence node impls.
   - Performance has NOT been evaluated. Production use is currently just beginning. 1.0 indicates the tool has been stable through testing, but in-game performance is still to be determined, and the current intended use is for smaller projects that are unlikely to encounter performance issues.
+  - After defining a new BehNode @tool, you likely need to Reload the project (Project -> Reload Current Project) to avoid issues with the add-node resource picker.
 
 ## Using the Editor
 - Inspect a BehTree to open the BehTree Editor in the bottom dock.
