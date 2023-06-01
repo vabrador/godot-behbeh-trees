@@ -22,6 +22,8 @@ I like being able to edit and author trees visually. I couldn't find a Behavior 
 ### Version 1.0 possibly-surprising limitations:
   - **Do not share tree references across multiple Node runners** and expect sensible behavior.
 	- `bb` is supposed to be the sole source of state, but this is not true in reality currently, due to Select / Sequence node impls.
+  - Similarly to the above, **BehNodes should be kept inside BehTrees and not in the file system**.
+    - More specifically, a BehNode should be unique to a given BehTree, because the BehNode stores tree-dependent information (currently). This can be fixed by preventing BehNodes from storing their own children, and enforcing `bb` as the source of all data, which would allow BehNodes to be safely re-used in different trees. None of that is the case currently.
   - Performance has NOT been evaluated. Production use is currently just beginning. 1.0 indicates the tool has been stable through testing, but in-game performance is still to be determined, and the current intended use is for smaller projects that are unlikely to encounter performance issues.
   - After defining a new BehNode @tool, you likely need to Reload the project (Project -> Reload Current Project) to avoid issues with the add-node resource picker.
 
