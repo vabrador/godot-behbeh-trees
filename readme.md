@@ -1,7 +1,7 @@
 # BehBeh Trees
 A flavor of Behavior Trees for Godot 4 featuring a GraphEdit-based editor.
 
-![screenshot of BehBeh Trees](example_tree_screenshots/Screenshot_2023-05-26_173006.png)
+![screenshot of BehBeh Trees](doc/Screenshot_2023-05-26_173006.png)
 
 ## TLDR
 - BehTrees contain BehNodes. Both are Resources.
@@ -15,13 +15,17 @@ A flavor of Behavior Trees for Godot 4 featuring a GraphEdit-based editor.
 
 ### Version 1.0 possibly-surprising limitations:
   - **Do not share tree references across multiple Node runners** and expect sensible behavior.
-    - `bb` is supposed to be the sole source of state, but this is not true in reality currently, due to Select / Sequence node impls.
+	- `bb` is supposed to be the sole source of state, but this is not true in reality currently, due to Select / Sequence node impls.
 
 ## Using the Editor
 - Inspect a BehTree to open the BehTree Editor in the bottom dock.
 - Right-click on the graph to add a new BehNode.
 - Double-click a BehNode in a BehTree to inspect it and edit any @exported variables.
-- Customize your BehNodes editor appearance by overriding `editor_` methods defined in BehNode (see: `tree/beh_node.gd`).
+- Customize your BehNodes' editor appearances by overriding `editor_` methods defined in BehNode (see: `tree/beh_node.gd`).
+  
+## License
+
+Dual-licensed under MIT & Apache 2.0.
 
 ## Alternatives
 - Consider [beehave](https://github.com/bitbrain/beehave), which offers `Node`-based (rather than `Resource`+Editor-based) behavior trees.
