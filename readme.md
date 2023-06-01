@@ -7,6 +7,7 @@ A flavor of Behavior Trees for Godot 4 featuring a GraphEdit-based editor.
 I like being able to edit and author trees visually. I couldn't find a Behavior Tree solution for Godot 4 that used GraphEdit.
 
 ## TLDR
+- Please evaluate in isolation first. Tool has only recently stabilized and may have dragons lurking.
 - BehTrees contain BehNodes. Both are Resources.
 - tick() BehTrees.
   - `fn tick(dt: float, bb: Dictionary) -> BehConst.Status`
