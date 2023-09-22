@@ -7,6 +7,8 @@ A flavor of Behavior Trees for Godot 4 featuring a GraphEdit-based editor. Lates
 ## Why?
 I like being able to edit and author trees visually. I couldn't find a Behavior Tree solution for Godot 4 that used GraphEdit.
 
+| [Behave](https://github.com/bitbrain/beehave) is very good. And more stable. Maybe use it instead of this right now?
+
 
 ## TLDR
 - Please evaluate in isolation first. Tool has only recently stabilized and may have dragons lurking.
