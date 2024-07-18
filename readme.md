@@ -1,4 +1,6 @@
 # BehBeh Trees
+> No longer under active development for now. If I need to home-spin a graph editor in the future, I may return to this.
+
 A flavor of Behavior Trees for Godot 4 featuring a GraphEdit-based editor. Latest tested Godot version: 4.0.3 stable.
 
 ![screenshot of BehBeh Trees](doc/Screenshot_2023-05-26_173006.png)
